@@ -4,66 +4,43 @@ db.users.insert()
 	"username": "juan.moggia",
 	"e-mail":"juan.moggia@gmail.com",
 	"password":"30052003",
-	"birth-date": "30/05/2003",
-	"inscription-date":"18/09/2020",
+	"birth-date":new Date("30/05/2003"),
+	"inscription-date":new Date("18/09/2020"),
 	"bpoints": 1000,
-
-	"profile-picture": "url or code color",
-	"library-privacy": "public or private",
-	"history-storage": true,
-	"theme": "dark",/*or light*/
-	"language":"english",
-
-	"notifications":true,
-	"noti-new-publication":true,
-	"noti-sub-ending":true,
-	"noti-buy-alert":true,
-	"noti-inform-sponsor":true,	
-
-	"subscriptions": [{
+	"following":[{
 		"id-artist":1,
-		"subscription-date":"18/09/2020"
+		"following-type":"follower",
+	}
+	{
+		"id-artist":2,
+		"following-type":"member",
 	}],
-	"sponsors": [{
+	"sponsors":[{
 		"id-sponsor":0,
 		"id-artist":1,
-		"invert-porcentage":2, /*%*/
-		"sponsor-date":"18/09/2020"/*1 mes*/ 
-	}],
-	"bookmarks": [{
-		"id-image":1
-	}],
-	"purchased-image": [{
-		"id-image":2
-	}],
-	"history": [{
-		"search-text": "picasso"
+		"invert-points":200,
+		"sponsor-date":new Date("18/09/2020")
 	}]
 }
 
 db.artist.insert(){
 	"id-user":0,
-
 	"images": [{
 		"id-image":0,
 		"name":"Yoda Boliviano",
-		"price":200, //en puntos y puede ser nulo si no esta a la venta
-		"post-date": "18/09/2020",
 		"description":"Yoda era uno de los más renombrados y poderosos maestros Jedi durante toda la historia de la Galaxia, y uno de los pocos Jedis de la República Galáctica en sobrevivir hasta la Guerra Civil Galáctica. Siendo el maestro más perceptivo de la Orden, él ejerció como Gran Maestro durante las Guerras Clon y la fundación del Imperio Galáctico, después de la cual escapó para ocultarse de la Gran Purga Jedi.",
-		
 		"url":"blob:https://web.whatsapp.com/7f9e6d18-3590-480e-bc2b-ec824c78f0ff",
-		
+		"post-date": new Date("18/09/2020"),
 		"tags": [{
-			"tag-name":"Peliculas"
-		}],
-		"comments": [{
-			"id-user":1,
-			"comment":"Que lindo te quedo juan",
-			"comment-date":"18/09/2020"
+			"id-tag": 0,
+			"tag-name":"StarWars",
+			"id-child-tag":1,
+		}
+		{
+			"id-tag": 0,
+			"tag-name":"StarWars",
+			"id-child-tag":2,
 		}]
-	}],
-
-	"noti-new-sub":true,
-	"noti-sell":true,
-	"noti-sponsor":true,
+		}
+	]
 }
