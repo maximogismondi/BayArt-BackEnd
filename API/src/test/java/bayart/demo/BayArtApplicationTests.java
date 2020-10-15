@@ -1,10 +1,10 @@
-package bayart;
+package bayart.demo;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BayartApplicationTests {
+class BayArtApplicationTests {
 
     @Test
     void contextLoads() {

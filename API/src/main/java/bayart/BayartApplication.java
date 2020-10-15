@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class BayartApplication {
+public class BayArtApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(BayartApplication.class, args);
+        SpringApplication.run(BayArtApplication.class, args);
     }
 
 }
