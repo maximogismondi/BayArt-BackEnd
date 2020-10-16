@@ -20,11 +20,10 @@ public class Controller {
     AccesoMongoDB accesoABase=new AccesoMongoDB();
 
 
-
     //Login
     @RequestMapping(path = "/logIn/{username} {password}", method = RequestMethod.GET)
-    public ResponseEntity<Object> confirmUserData(@PathVariable String username,
-                                                  @PathVariable String password) {
+    public ResponseEntity<Object> confirmLogInData(@PathVariable String username,
+                                                   @PathVariable String password) {
 
         Map<String, Object> infoResponse = new HashMap<>();
 
@@ -44,15 +43,15 @@ public class Controller {
 
     //Register
     @RequestMapping(path = "/register/{username} {eMail} {confirmEMail} {password} {confirmPassword} {day} {month} {year} {type}", method = RequestMethod.POST)
-    public ResponseEntity<Object> confirmUserData(@PathVariable String username,
-                                                  @PathVariable String eMail,
-                                                  @PathVariable String confirmEMail,
-                                                  @PathVariable String password,
-                                                  @PathVariable String confirmPassword,
-                                                  @PathVariable String day,
-                                                  @PathVariable String month,
-                                                  @PathVariable String year,
-                                                  @PathVariable String type) {
+    public ResponseEntity<Object> confirmRegisterData(@PathVariable String username,
+                                                      @PathVariable String eMail,
+                                                      @PathVariable String confirmEMail,
+                                                      @PathVariable String password,
+                                                      @PathVariable String confirmPassword,
+                                                      @PathVariable String day,
+                                                      @PathVariable String month,
+                                                      @PathVariable String year,
+                                                      @PathVariable String type) {
 
         Map<String, Object> infoResponse = new HashMap<>();
 
@@ -71,107 +70,102 @@ public class Controller {
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
 
+
         parametrosUsuario.put("username",username);
 
-        Date fechaIncriptions = new Date(Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(day))
+        Date fechaIncriptions = new Date(Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(day));
 
-        User usur = new User(null, username, eMail, password, fechaIncriptions, new Date(), 1000,"",
-                true, true, true, "en", true, true,
-                             true, true , new HashMap<>(), new HashMap<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        accesoABase.insertarUsuario(username, eMail, password, fechaIncriptions, type);
 
-        accesoABase.insertarUsuario();
+        HashMap eMailUsuario = new HashMap<>();
+        eMailUsuario.put("eMail",eMail);
+
+        User user = (User) accesoABase.obtenerUsuarios(eMailUsuario).get(0);
+
+        infoResponse.put("user",user);
+
+        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
 
     }
 
     //Homepage
-    @RequestMapping (path="/homepage/{idUser} viewAs = {userType}", method = RequestMethod.GET)
+    @RequestMapping(path = "/homepage/{idUser} viewAs = {userType}", method = RequestMethod.GET)
     public ResponseEntity<Object> getImgSubscriptions(@PathVariable Integer idUser,
-                                              @PathVariable User userType){
+                                                      @PathVariable User userType){
 
         Map<Integer,Image>   subscriptionsImg = new HashMap<>();
-        Map<Integer, Object> infoResponse     = new HashMap<>();
+        Map<String, Object> infoResponse     = new HashMap<>();
         Map<String,String>   requisitos       = new HashMap<>();
 
         requisitos.put("idUser",Integer.toString(idUser));
 
-        User newUser = accesoABase.obtenerUsuarios(requisitos).get(0);
-        List<Map<Integer,Date>>subscriptions = (List<Map<Integer, Date>>) newUser.getSubscriptions();
+        User actualUser = accesoABase.obtenerUsuarios(requisitos).get(0);
+        List<Map<Integer,Date>>subscriptions = (List<Map<Integer, Date>>) actualUser.getSubscriptions();
 
         if(subscriptions.isEmpty()){
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
         else{
-            for(Map<Integer,Date>map : subscriptions){
+            for(Map<Integer,Date>map : subscriptions){  //recorre cada dato de la subscripción
                 for(Map.Entry<Integer, Date> entry : map.entrySet()){
 
-                    HashMap<String,String>datos=new HashMap<>();
+                    HashMap<String,String> datos = new HashMap<>(); //guarda los datos del artista para pasarlos por parámetro
                     datos.put("idUser",Integer.toString(entry.getKey()));
 
-                    Artist artista = (Artist)accesoABase.obtenerUsuarios(datos);
-                    HashMap<Image,String>imagesArtist=artista.getImageList();
+                    Artist artista = (Artist) accesoABase.obtenerArtistas(datos).get(0);
+                    HashMap<Image,String>imagesArtist = artista.getImageList(); //obtiene los datos de cada imagen del artista en cuestión
 
-                    for(Map.Entry<Image,String>dato:imagesArtist.entrySet()){
+                    for(Map.Entry<Image,String>dato : imagesArtist.entrySet()){ //recorre para sacar únicamente la imagen
 
                         //inserta imagenes de artista en el map
-                        subscriptionsImg.put(artista.getIdUser(),dato.getKey());
+                        subscriptionsImg.put(artista.getIdUser(),dato.getKey()); //la agrega a la variable que va a retornar
 
                     }
                 }
             }
         }
 
-        infoResponse.put(idUser, subscriptionsImg);
+        infoResponse.put("artists", subscriptions);
+        infoResponse.put("images", subscriptionsImg);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
 
     }
 
+    //Store
 
-    //Obtiene el id de los artistas a los cuales esta subscripto
-    @RequestMapping (path="/homepage/{idUser} viewAs = {userType}",method = RequestMethod.GET)
-    public ArrayList<Integer> getSubscriptions(@PathVariable Integer idUser,
-                                               @PathVariable User userType){
+    //los artistas con mas puntos
+    //Los nuevos artistas
+    //Mas comentadas
+    @RequestMapping(path = "/store/{idUser} viewAs = {userType} index = {index}", method = RequestMethod.GET)
+    public ResponseEntity<Object> getImgBookmarksStore(@PathVariable Integer idUser,
+                                                       @PathVariable User userType,
+                                                       @PathVariable User userType){
 
-        ArrayList<Integer>subscripted=new ArrayList<>();
-        Map<String,Integer>requisitos=new HashMap<>();
+        Map<Object, Object> infoResponse = new HashMap<>();
 
-        requisitos.put("idUser",idUser);
 
-        if(accesoABase.containsUser(idUser)){
-            User usuario=accesoABase.obtenerUsuario(requisitos);
-            HashMap<Integer,Date>subscriptions=usuario.getSubscriptions();
-
-            for(Map)
-        }
-
-        return following;
 
     }
 
+    //Browse
 
 
-
-    @RequestMapping(value="/register", method=RequestMethod.POST)
-    public ResponseEntity<Object>registrarUsuario(@RequestParam String usuarioJsonString){
-
-        User newUser=gson.formJson(usuarioJsonString,User.class);
-
-        Map<String, Object> infoResponse = new HashMap<>();
-
-        if(accesoABase.containsUser(newUser.getIdUser())){
-            response=new ResponseEntity<>(inforResponse,HttpStatus.UNAUTHORIZED);
-        }
-        else{
-            accesoABase.insertarUsuario(newUser);
-            response = new ResponseEntity<>(infoResponse, HttpStatus.CREATED);
-        }
-        return response;
-    }
+    //Search
 
 
-    /* ------- */
+    //Individual Image
 
 
+    //Arist Profile
 
+
+    //Library
+
+
+    //Settings
+
+
+    //Upload Image
 
 }

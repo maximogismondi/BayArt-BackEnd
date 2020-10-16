@@ -49,13 +49,13 @@ public class AccesoMongoDB {
         }
     }
 
-    public long obtenerCantidadDeDocumentos(){
+    /*public long obtenerCantidadDeDocumentos(){
         long cantidadDeRegistros= coleccion.count();
         return cantidadDeRegistros;
-    }
+    }*/
 
     //Recibe los parametros que quieras (de usuarios) y te devuelve la lista de usuarios que cumplan los requisitos
-    public ArrayList<User> obtenerUsuarios(Map<String,String> valoresRequeridos) {
+        public ArrayList<User> obtenerUsuarios(Map<String,String> valoresRequeridos) {
 
         conectarAColeccion("Users");
 
@@ -190,39 +190,39 @@ public class AccesoMongoDB {
 
     }
 
-    public void insertarUsuario(User usuario, HashMap<Image,String> imageList ){
+    public void insertarUsuario(String username, String eMail, String password, Date inscriptionDate, String artista){
 
         conectarAColeccion("Users");
 
         Document nuevoDocumento = new Document();
         nuevoDocumento.append("idUser",null);
-        nuevoDocumento.append("username",usuario.getUsername());
-        nuevoDocumento.append("password",usuario.getPassword());
-        nuevoDocumento.append("email",usuario.geteMail());
-        nuevoDocumento.append("birthDate",usuario.getBirthDate());
-        nuevoDocumento.append("inscriptionDate",usuario.getInscriptionDate());
-        nuevoDocumento.append("bpoints",usuario.getBpoints());
-        nuevoDocumento.append("libraryPrivacy",usuario.getLibraryPrivacy());
-        nuevoDocumento.append("historyStorage",usuario.getHistoryStore());
-        nuevoDocumento.append("theme",usuario.getTheme());
-        nuevoDocumento.append("language",usuario.getLanguage());
+        nuevoDocumento.append("username",username);
+        nuevoDocumento.append("password",password);
+        nuevoDocumento.append("email",eMail);
+        nuevoDocumento.append("inscriptionDate",inscriptionDate);
+        nuevoDocumento.append("birthDate",new Date());
+        nuevoDocumento.append("bpoints",1000);
+        nuevoDocumento.append("libraryPrivacy",true);
+        nuevoDocumento.append("historyStorage",true);
+        nuevoDocumento.append("theme",true);
+        nuevoDocumento.append("language","es");
         nuevoDocumento.append("notifications-new-publication",true);
         nuevoDocumento.append("notifications-sub-ending",true);
         nuevoDocumento.append("notifications-buy-alert",true);
         nuevoDocumento.append("notifications-inform-sponsor",true);
-        nuevoDocumento.append("subscriptions",usuario.getSubscriptions());
-        nuevoDocumento.append("sponsors",usuario.getSponsors());
-        nuevoDocumento.append("bookmarks",usuario.getBookmarks());
-        nuevoDocumento.append("history",usuario.getHistory());
-        nuevoDocumento.append("purchased",usuario.getPurchased());
+        nuevoDocumento.append("subscriptions",new HashMap<>());
+        nuevoDocumento.append("sponsors",new HashMap<>());
+        nuevoDocumento.append("bookmarks",new ArrayList<>());
+        nuevoDocumento.append("history",new ArrayList<>());
+        nuevoDocumento.append("purchased",new ArrayList<>());
 
         coleccion.insertOne(nuevoDocumento);
 
-        if(imageList != null){
+        if(artista == "artist"){
             conectarAColeccion("Artists");
 
             HashMap<String,String> parametrosUsuario = new HashMap<>();
-            parametrosUsuario.put("eMail",usuario.geteMail());
+            parametrosUsuario.put("eMail",eMail);
             Integer idUser = obtenerUsuarios(parametrosUsuario).get(0).getIdUser();
 
             Document nuevoDocumentoArtista = new Document();
@@ -231,7 +231,7 @@ public class AccesoMongoDB {
             nuevoDocumentoArtista.append("notifications-new-sub",true);
             nuevoDocumentoArtista.append("notifications-sell",true);
             nuevoDocumentoArtista.append("notifications-sponsor",true);
-            nuevoDocumentoArtista.append("imageList",imageList);
+            nuevoDocumentoArtista.append("imageList",new HashMap<>());
 
             coleccion.insertOne(nuevoDocumentoArtista);
         }
