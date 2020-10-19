@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 public class Image{
 	private Integer idImage;
+	private Integer idUser;
 	private String name;
 	private Integer price;
 	private Date    postDate;
@@ -14,8 +15,9 @@ public class Image{
 	private ArrayList<String> tags;
 	private HashMap<Integer,HashMap<Date,String>> comments;
 
-    public Image(Integer idImage, String name, Integer price, Date postDate, String description, String url, ArrayList<String> tags, HashMap<Integer, HashMap<Date, String>> comments) {
+    public Image(Integer idImage, Integer idUser, String name, Integer price, Date postDate, String description, String url, ArrayList<String> tags, HashMap<Integer, HashMap<Date, String>> comments) {
         this.idImage 	 = idImage;
+        this.idUser      = idUser;
         this.name 		 = name;
         this.price 		 = price;
         this.postDate 	 = postDate;
@@ -27,6 +29,10 @@ public class Image{
 
     public Integer getIdImage() {
         return idImage;
+    }
+
+    public Integer getIdUser() {
+        return idUser;
     }
 
     public String getName() {
@@ -59,6 +65,10 @@ public class Image{
 
     public void setIdImage(Integer idImage) {
         this.idImage = idImage;
+    }
+
+    public void setIdUser(Integer idUser) {
+        this.idUser = idUser;
     }
 
     public void setName(String name) {

@@ -11,8 +11,7 @@ import java.lang.reflect.Array;
 import java.util.*;
 import java.lang.Exception;
 
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.*;
 
 @Service
 public class AccesoMongoDB {
@@ -54,8 +53,11 @@ public class AccesoMongoDB {
         return cantidadDeRegistros;
     }*/
 
+    //Fotos
+    //Artistas
+
     //Recibe los parametros que quieras (de usuarios) y te devuelve la lista de usuarios que cumplan los requisitos
-        public ArrayList<User> obtenerUsuarios(Map<String,String> valoresRequeridos) {
+    public ArrayList<User> obtenerUsuarios(Map<String,String> valoresRequeridos) {
 
         conectarAColeccion("Users");
 
@@ -134,7 +136,6 @@ public class AccesoMongoDB {
             filtros.add(equivalencia);
         }
 
-
         //Forma un Archivo BSON con los filtros anteriormente formados
         Bson requisitosACumplir = and(filtros);
 
@@ -149,44 +150,72 @@ public class AccesoMongoDB {
         //creando objetos de tipo "Artist" y agregandolos al array "foundArtists"
         while(iterador.hasNext()){
 
-            Document document        = (Document) iterador.next();
-
-            Integer  idUser          = document.getInteger("idUser");
-            String   userName        = document.getString("username");
-            String   eMail           = document.getString("eMail");
-            String   password        = document.getString("password");
-            Date     birthDate       = document.getDate("birthdate");
-            Date     inscriptionDate = document.getDate("inscriptionDate");
-            Integer  bpoints         = document.getInteger("bpoints");
-            String   profilePicture  = document.getString("profilePicture");
-            Boolean  libraryPrivacy  = document.getBoolean("libraryPrivacy");
-            Boolean  historyStorage  = document.getBoolean("historyStorage");
-            Boolean  theme           = document.getBoolean("theme");
-            String   language        = document.getString("language");
-            Boolean  notificationsNewPublication  = document.getBoolean("notifications-new-publication");
-            Boolean  notificationsSubEnding       = document.getBoolean("notifications-sub-ending");
-            Boolean  notificationsBuyAlert        = document.getBoolean("notifications-buy-alert");
-            Boolean  notificationsInformSponsor   = document.getBoolean("notifications-inform-sponsor");
-            HashMap<Integer,Date>                  subscriptions = (HashMap<Integer, Date>)                   document.get("subscriptions");
-            HashMap<Integer,HashMap<Integer,Date>> sponsors      = (HashMap<Integer, HashMap<Integer, Date>>) document.get("sponsors");
-            HashMap<Image,String>                  imageList     = (HashMap<Image,String>)                    document.get("imageList");
-            ArrayList<String>                      history       = (ArrayList<String>)                        document.get("history");
-            ArrayList<Integer>                     purchased     = (ArrayList<Integer>)                       document.get("purchased");
-            ArrayList<Integer>                     bookmarks     = (ArrayList<Integer>)                       document.get("bookmarks");
+            Document document             = (Document) iterador.next();
+            ArrayList<Image> imageList    = (ArrayList<Image>) document.get("imageList");
             Boolean  notificationsNewSub  = document.getBoolean("notifications-new-sub");
             Boolean  notificationsSell    = document.getBoolean("notifications-sell");
             Boolean  notificationsSponsor = document.getBoolean("notifications-sponsor");
 
-            Artist artista = new Artist(idUser,userName,eMail,password,birthDate,inscriptionDate,
-                    bpoints,profilePicture,libraryPrivacy,historyStorage,theme,
-                    language,notificationsNewPublication,notificationsSubEnding,
-                    notificationsBuyAlert,notificationsInformSponsor,subscriptions,sponsors,
-                    bookmarks,history,purchased,imageList,notificationsNewSub,notificationsSell,notificationsSponsor);
+            Artist artista = new Artist(imageList,notificationsNewSub,notificationsSell,notificationsSponsor);
 
             foundArtists.add(artista);
         }
 
         return  foundArtists;
+
+    }
+
+    //Devuelva ARRAYLIST de imagenes por filtros como tags, maxprice, contenga un subtring en el nombre o descipcion
+
+    public List<Image>obtenerImagenes(Map<String, String> requiredValue){
+
+        List<Image>resultImages=new ArrayList<>();//lista de imágenes que va a retornar
+
+        Map<String,String> requirements = new HashMap<>();
+
+        requirements.put("name",requiredValue);
+        requirements.put("description",requiredValue);
+
+        //almacena los requisitos en la lista de bson
+        List<Bson>      filtros    = new ArrayList<>();
+
+        for (Map.Entry<String,String> atributo : requirements.entrySet()) {
+            Bson contains = Filters.CONTAINS(atributo.getKey(),atributo.getValue());
+            filtros.add(contains);
+        }
+
+
+        //Forma un Archivo BSON con los filtros anteriormente formados
+        Bson requisitosACumplir = or(filtros);
+
+        //Consigue las tuplas de la base que coincidan con los valores del BSON anteriormente creado
+        FindIterable resultados = coleccion.find(requisitosACumplir);
+
+        //Crea un cursor con el cual recorrer los resultados
+        MongoCursor iterador = resultados.iterator();
+
+        while(iterador.hasNext()) {
+
+            Document document = (Document) iterador.next();
+
+            Integer idImage = document.getInteger("idImage");
+            Integer idUser = document.getInteger("idUser");
+            String name = document.getString("name");
+            Integer price = document.getInteger("price");
+            Date postDate = document.getDate("postDate");
+            String description = document.getString("description");
+            String url = document.getString("url");
+            ArrayList<String> tags = (ArrayList<String>) document.get("tags");
+            HashMap<Integer, HashMap<Date, String>> comments = (HashMap<Integer, HashMap<Date, String>>) document.get("coments");
+
+
+            Image image = new Image(idImage,idUser,name,price,postDate,description,url,tags,comments);
+            resultImages.add(image);
+
+        }
+
+
+        return resultImages;
 
     }
 
