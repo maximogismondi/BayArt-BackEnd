@@ -1,75 +1,76 @@
 db.users.insert()
 {
-	"id-user":0,
+	"idUser":0,
 	"username": "juan.moggia",
-	"e-mail":"juan.moggia@gmail.com",
+	"eMail":"juan.moggia@gmail.com",
 	"password":"30052003",
-	"birth-date": "30/05/2003",
+	"birthDate": "30/05/2003",
 	"inscription-date":"18/09/2020",
 	"bpoints": 1000,
 
-	"profile-picture": "url or code color",
-	"library-privacy": "public or private",
-	"history-store": true,
+	"profilePicture": "url or code color",
+	"libraryPrivacy": "public or private",
+	"historyStore": true,
 	"theme": "dark",/*or light*/
 	"language":"english",
 
-	"notifications-new-publication":true,
-	"notifications-sub-ending":true,
-	"notifications-buy-alert":true,
-	"notifications-inform-sponsor":true,	
+	"notificationsNewPublication":true,
+	"notificationsSubEnding":true,
+	"notificationsBuyAlert":true,
+	"notificationsInformSponsor":true,	
 
 	"subscriptions": [{
-		"id-artist":1,
-		"subscription-date":"18/09/2020"
+		"idArtist":1,
+		"subscriptionDate":"18/09/2020"
 	}],
 	"sponsors": [{
-		"id-sponsor":0,
-		"id-artist":1,
-		"invert-porcentage":2, /*%*/
-		"sponsor-date":"18/09/2020"/*1 mes*/ 
+		"idSponsor":0,
+		"idArtist":1,
+		"invertPorcentage":2, /*%*/
+		"sponsorDate":"18/09/2020"/*1 mes*/ 
 	}],
 	"bookmarks": [{
-		"id-image":1
+		"idImage":1
 	}],
 	"purchased-image": [{
-		"id-image":2
+		"idImage":2,
+		"raspberryDisplay":true
 	}],
 	"history": [{
-		"search-text": "picasso"
+		"searchText": "picasso"
 	}]
 }
 
 db.artist.insert(){
-	"id-user":0,
+	"idUser":0,
 
 	"images": [{
-		"id-image":1
+		"idImage":1
 	}],
 
-	"notifications-new-sub":true,
-	"notifications-sell":true,
-	"notifications-sponsor":true,
+	"notificationsNewSub":true,
+	"notificationsSell":true,
+	"notificationsSponsor":true,
 }
 
 db.image.insert(){	
 
-	"id-image":0,
-	"id-user":0,
+	"idImage":0,
+	"idUser":0,
 	"name":"Yoda Boliviano",
 	"price":200, //en puntos y puede ser nulo si no esta a la venta
-	"post-date": "18/09/2020",
+	"postDate": "18/09/2020",
 	"description":"Yoda era uno de los más renombrados y poderosos maestros Jedi durante toda la historia de la Galaxia, y uno de los pocos Jedis de la República Galáctica en sobrevivir hasta la Guerra Civil Galáctica. Siendo el maestro más perceptivo de la Orden, él ejerció como Gran Maestro durante las Guerras Clon y la fundación del Imperio Galáctico, después de la cual escapó para ocultarse de la Gran Purga Jedi.",
 	
 	"url":"blob:https://web.whatsapp.com/7f9e6d18-3590-480e-bc2b-ec824c78f0ff",
 	
 	"tags": [{
-		"tag-name":"Peliculas"
+		"tagName":"Peliculas"
 	}],
 	"comments": [{
-		"id-user":1,
+		"idUser":1,
 		"comment":"Que lindo te quedo juan",
-		"comment-date":"18/09/2020"
+		"commentDate":"18/09/2020"
 	}]
-
+	
 }

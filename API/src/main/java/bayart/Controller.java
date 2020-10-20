@@ -16,12 +16,14 @@ import java.util.*;
 @RequestMapping("/api")
 @RestController
 
-public class Controller {
+public class BayArtController {
 
 
     //Acceso a mongo
-    AccesoMongoDB accesoABase=new AccesoMongoDB();
+    AccesoMongoDB accesoABase = new AccesoMongoDB();
 
+    //lista compartida de imagenes
+    Map<Artist, Image> listaImages = new HashMap<>();
 
     //Login
     @RequestMapping(path = "/logIn/{username} {password}", method = RequestMethod.GET)
@@ -91,44 +93,120 @@ public class Controller {
 
     }
 
-    //Homepage
-    @RequestMapping(path = "/homepage/{idUser}", method = RequestMethod.GET)
-    public ResponseEntity<Object> getImgSubscriptions(@PathVariable Integer idUser){
+    Map<Artist, Image> mergeSort(Map<Artist, Image> array){
+        Map<Artist, Image> splitArrayL = new HashMap<>();
+        Map<Artist, Image> splitArrayR = new HashMap<>();
+        if(array.size() == 1){
+            return array;
+        } else {
+            int i = 0, m = array.size()/2;
+            for(Map.Entry<Artist, Image> artistImage : array.entrySet()){
+                if(i < m){
+                    splitArrayL.put(artistImage.getKey(),artistImage.getValue());
+                } else {
+                    splitArrayR.put(artistImage.getKey(),artistImage.getValue());
+                }
+                i++;
+            }
+            splitArrayL = mergeSort(splitArrayL);
+            splitArrayR = mergeSort(splitArrayR);
+        }
 
-        Map<Integer,Image>   subscriptionsImg = new HashMap<>();
-        Map<String, Object> infoResponse     = new HashMap<>();
+        int indexL = 0;
+        int indexR = 0;
+
+        array.clear();
+
+        while(indexL+indexR < splitArrayL.size()+splitArrayR.size()-1){
+            int i = 0;
+            if(indexL == splitArrayL.size()){
+                for (Map.Entry<Artist, Image> artistImage : splitArrayR.entrySet()){
+                    if (i >= indexR) {
+                        array.put(artistImage.getKey(),artistImage.getValue());
+                    }
+                    i++;
+                }
+                indexR++;
+            } else if (indexR == splitArrayR.size()){
+                for (Map.Entry<Artist, Image> artistImage : splitArrayL.entrySet()){
+                    if (i >= indexL) {
+                        array.put(artistImage.getKey(),artistImage.getValue());
+                    }
+                    i++;
+                }
+                indexL++;
+            } else if (splitArrayL.get(indexL).getPostDate().compareTo(splitArrayR.get(indexR).getPostDate()) >= 0) {
+                for (Map.Entry<Artist, Image> artistImage : splitArrayL.entrySet()){
+                    if (i == indexL) {
+                        array.put(artistImage.getKey(),artistImage.getValue());
+                        break;
+                    }
+                    i++;
+                }
+                indexL++;
+            } else {
+                for (Map.Entry<Artist, Image> artistImage : splitArrayR.entrySet()){
+                    if (i == indexR) {
+                        array.put(artistImage.getKey(),artistImage.getValue());
+                        break;
+                    }
+                    i++;
+                }
+                indexR++;
+            }
+        }
+        return array;
+    }
+
+
+    //Homepage
+    @RequestMapping(path = "/homepage/{idUser} index = {index}", method = RequestMethod.GET)
+    public ResponseEntity<Object> getImgHomepage_ArtistSubscriptions(@PathVariable Integer idUser,
+                                                                     @PathVariable Integer index){
+
+        Map<String, Object>  infoResponse     = new HashMap<>();
         Map<String,String>   requisitos       = new HashMap<>();
 
-        requisitos.put("idUser",Integer.toString(idUser));
+        if(index==1){
+            requisitos.put("idUser",Integer.toString(idUser));
 
-        User actualUser = accesoABase.obtenerUsuarios(requisitos).get(0);
-        List<Map<Integer,Date>>subscriptions = (List<Map<Integer, Date>>) actualUser.getSubscriptions();
+            User actualUser = accesoABase.obtenerUsuarios(requisitos).get(0);
+            List<Map<Integer,Date>>subscriptions  = (List<Map<Integer, Date>>) actualUser.getSubscriptions();
 
-        if(subscriptions.isEmpty()){
-            return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
-        }
-        else{
-            for(Map<Integer,Date>map : subscriptions){  //recorre cada dato de la subscripción
-                for(Map.Entry<Integer, Date> entry : map.entrySet()){
+            if(subscriptions.isEmpty()){
+                return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
+            }
+            else{
+                for(Map<Integer,Date>map : subscriptions){  //recorre cada dato de la subscripción
+                    for(Map.Entry<Integer, Date> entry : map.entrySet()){
 
-                    HashMap<String,String> datos = new HashMap<>(); //guarda los datos del artista para pasarlos por parámetro
-                    datos.put("idUser",Integer.toString(entry.getKey()));
+                        HashMap<String,String> datos = new HashMap<>(); //guarda los datos del artista para pasarlos por parámetro
+                        datos.put("idUser",Integer.toString(entry.getKey()));
 
-                    Artist artista = (Artist) accesoABase.obtenerArtistas(datos).get(0);
-                    ArrayList<Image> imagesArtist = artista.getImageList(); //obtiene los datos de cada imagen del artista en cuestión
+                        Artist artista = (Artist) accesoABase.obtenerArtistas(datos).get(0);
+                        ArrayList<Image> imagesArtist = artista.getImageList(); //obtiene los datos de cada imagen del artista en cuestión
 
-                    for(Image dato : imagesArtist){ //recorre para sacar únicamente la imagen
+                        for(Image dato : imagesArtist){ //recorre para sacar únicamente la imagen
 
-                        //inserta imagenes de artista en el map
-                        subscriptionsImg.put(artista.getIdUser(),dato); //la agrega a la variable que va a retornar
+                            //inserta imagenes de artista en el map
+                            listaImages.put(artista, dato); //la agrega a la variable que va a retornar
 
+                        }
                     }
                 }
             }
+            listaImages = mergeSort(listaImages);
+            infoResponse.put("artists", subscriptions);
         }
 
-        infoResponse.put("artists", subscriptions);
-        infoResponse.put("images", subscriptionsImg);
+        Map<Artist, Image> listaImagesIndex = new HashMap<>();
+        int start = 30 * (index - 1), lim = 30 * index, i = 0;
+
+        for(Map.Entry<Artist, Image> artistImage : listaImages.entrySet()){
+            if(i >= start && i < lim) listaImagesIndex.put(artistImage.getKey(),artistImage.getValue());
+            i++;
+        }
+        infoResponse.put("images", listaImagesIndex);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
 
@@ -153,8 +231,6 @@ public class Controller {
 
     //Store
 
-    HashMap<Artist, Image> listaImages = new HashMap<>();
-
     private Image imagenesDisponible(Artist artista,  ArrayList<String> listaFiltros, Integer maxPrice){
 
         for(Image imagenAux : artista.getImageList()){
@@ -164,17 +240,19 @@ public class Controller {
                 for(String filtro : listaFiltros){
                     for (String tag : imagenAux.getTags()){
                         if(filtro.equals(tag)){
-                            return true;
+                            return imagenAux;
                         }
                     }
                 }
             }
         }
-        return false;
+
+        return new Image(null,null,null,null,null,null,null,null,null);
+
     }
 
     @RequestMapping(path = "/store/{idUser} index = {index} filters = {filters} maxPrice = {maxPrice}", method = RequestMethod.GET)
-    public ResponseEntity<Object> getImgBookmarksStore(@PathVariable String idUser,
+    public ResponseEntity<Object> getImgBookmarks_ImgStore(@PathVariable String idUser,
                                                        @PathVariable Integer index,
                                                        @PathVariable String filters,
                                                        @PathVariable Integer maxPrice){
@@ -216,28 +294,16 @@ public class Controller {
             boolean findArtist = false;
             while(!findArtist) {
                 Artist artista = listaArtistas.get((int) (Math.random() * (listaArtistas.size()-1)));
-                if (Math.random() * 100 <= Math.log(artista.getBpoints() / 100) * 5 &&
-                    tieneImagenesDisponibles(artista, listaFiltros, maxPrice) ) {
+                if (Math.random() * 100 <= Math.log(artista.getBpoints() / 100) * 5) {
 
                     findArtist = true;
-
                     boolean findImage = false;
 
-                    for (int i = 0; i < artista.getImageList().size() && !findImage; i++) {
-
-                        Image imageAComprobar = artista.getImageList().get(i);
-                        for(String filtro : listaFiltros){
-                            for (String tag : imageAComprobar.getTags()){
-                                if(filtro.equals(tag)){
-                                    if(imageAComprobar.getPrice() <= maxPrice &&
-                                       imageAComprobar.getPrice() > 0){
-                                        findImage = true;
-                                        listaImages.put(artista,imageAComprobar);
-                                    }
-                                }
-                            }
-                        }
+                    Image imagenAMostrar = imagenesDisponible(artista, listaFiltros, maxPrice);
+                    if(imagenAMostrar.getIdImage() != null){
+                        listaImages.put(artista,imagenAMostrar);
                     }
+
                 }
             }
         }
@@ -252,7 +318,7 @@ public class Controller {
 
 
     @RequestMapping(path = "/browse/{idUser} index = {index} filters = {filters}", method = RequestMethod.GET)
-    public ResponseEntity<Object> getImgBookmarksBrowse(@PathVariable String idUser,
+    public ResponseEntity<Object> getImgBrowse(@PathVariable String idUser,
                                                         @PathVariable Integer index,
                                                         @PathVariable String filters){
 
@@ -272,27 +338,16 @@ public class Controller {
             boolean findArtist = false;
             while(!findArtist) {
                 Artist artista = listaArtistas.get((int) (Math.random() * listaArtistas.size()));
-                if (tieneImagenesDisponibles(artista, listaFiltros, 0) &&
-                        Math.random() * 100 <= Math.log(artista.getBpoints() / 100) * 5) {
+                if (Math.random() * 100 <= Math.log(artista.getBpoints() / 100) * 5) {
 
                     findArtist = true;
-
                     boolean findImage = false;
 
-                    for (int i = 0; i < artista.getImageList().size() && !findImage; i++) {
-
-                        Image imageAComprobar = artista.getImageList().get(i);
-                        for(String filtro : listaFiltros){
-                            for (String tag : imageAComprobar.getTags()){
-                                if(filtro.equals(tag)){
-                                    if(imageAComprobar.getPrice() == 0){
-                                        findImage = true;
-                                        listaImages.put(artista,imageAComprobar);
-                                    }
-                                }
-                            }
-                        }
+                    Image imagenAMostrar = imagenesDisponible(artista, listaFiltros, 0);
+                    if(imagenAMostrar.getIdImage() != null){
+                        listaImages.put(artista,imagenAMostrar);
                     }
+
                 }
             }
         }
@@ -324,6 +379,18 @@ public class Controller {
 
         infoResponse.put("artist", artista);
         infoResponse.put("image",imagen);
+
+        return new ResponseEntity<>(infoResponse,HttpStatus.OK);
+    }
+
+    @RequestMapping(path = "/individualImage/{idImage} {idUser} action = {action}", method = RequestMethod.POST)
+    public ResponseEntity<Object> addBookmark_BuyImage(@PathVariable String idImage,
+                                                       @PathVariable String idUser,
+                                                       @PathVariable String action){
+
+        Map<String, Object> infoResponse = new HashMap<>();
+
+        accesoABase.addImage(idUser,idImage,action);
 
         return new ResponseEntity<>(infoResponse,HttpStatus.OK);
     }
@@ -372,7 +439,7 @@ public class Controller {
 
 
     //Library
-
+    @RequestMapping(path="/library/{word} viewAs = {userType}",method=RequestMethod.GET)
 
     //Settings
 
