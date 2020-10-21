@@ -1,17 +1,15 @@
 package bayart;
-import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
-import com.mongodb.client.*;
-import com.mongodb.client.model.Filters;
-import com.mongodb.util.JSON;
-import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.springframework.boot.autoconfigure.security.SecurityProperties;
-import org.springframework.stereotype.Service;
+    import com.mongodb.DBObject;
+    import com.mongodb.MongoClient;
+    import com.mongodb.client.*;
+    import com.mongodb.client.model.Filters;
+    import com.mongodb.util.JSON;
+    import org.bson.Document;
+    import org.bson.conversions.Bson;
+    import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Array;
-import java.util.*;
-import java.lang.Exception;
+    import java.util.*;
+    import java.lang.Exception;
 
 import static com.mongodb.client.model.Filters.*;
 
@@ -49,7 +47,6 @@ public class AccesoMongoDB {
         }
     }
 
-    //Recibe los parametros que quieras (de usuarios) y te devuelve la lista de usuarios que cumplan los requisitos
     public ArrayList<User> obtenerUsuarios(Map<String, String> valoresRequeridos) {
 
         conectarAColeccion("Users");
@@ -100,7 +97,7 @@ public class AccesoMongoDB {
             HashMap<Integer, HashMap<Integer, Date>> sponsors = (HashMap<Integer, HashMap<Integer, Date>>) document.get("sponsors");
             ArrayList<Integer> bookmarks = (ArrayList<Integer>) document.get("bookmarks");
             ArrayList<String> history = (ArrayList<String>) document.get("history");
-            ArrayList<Integer> purchased = (ArrayList<Integer>) document.get("purchased");
+            Map<Map<Integer,Date>,Boolean> purchased = (Map<Map<Integer,Date>,Boolean>) document.get("purchased");
 
             User usuario = new User(idUser, userName, eMail, password, birthDate, inscriptionDate,
                     bpoints, profilePicture, libraryPrivacy, historyStore, theme,
@@ -115,7 +112,6 @@ public class AccesoMongoDB {
 
     }
 
-    //Recibe los parametros que quieras (de artistas) y te devuelve la lista de artistas que cumplan los requisitos
     public ArrayList<Artist> obtenerArtistas(Map<String, String> valoresRequeridos) {
 
         conectarAColeccion("Artists");
@@ -182,7 +178,7 @@ public class AccesoMongoDB {
         nuevoDocumento.append("sponsors", new HashMap<>());
         nuevoDocumento.append("bookmarks", new ArrayList<>());
         nuevoDocumento.append("history", new ArrayList<>());
-        nuevoDocumento.append("purchased", new ArrayList<>());
+        nuevoDocumento.append("purchased", new HashMap<>());
 
         coleccion.insertOne(nuevoDocumento);
 
@@ -240,4 +236,36 @@ public class AccesoMongoDB {
         }
         return false;
     }
+
+    public void changeStringParameters(String idUser, String field, String change){
+        conectarAColeccion("Users");
+
+        Map<String, String> parametros = new HashMap<>();
+        parametros.put("idUser",idUser);
+
+        User usuario = obtenerUsuarios(parametros).get(0);
+
+        List<Bson> filtros = new ArrayList<>();
+
+        for (Map.Entry<String, String> atributo : parametros.entrySet()) {
+            Bson equivalencia = Filters.eq(atributo.getKey(), atributo.getValue());
+            filtros.add(equivalencia);
+        }
+
+        Bson requisitosACumplir = and(filtros);
+
+        String json;
+
+        if(field.equals("history")){
+            json = "{ $pull: {history: {}}}";
+        } else {
+            json = "{ $set: { " + field + ":" + change + "}}";
+        }
+
+        DBObject push = (DBObject) JSON.parse(json);
+
+        coleccion.updateOne(requisitosACumplir, (Bson)push);
+
+    }
+
 }

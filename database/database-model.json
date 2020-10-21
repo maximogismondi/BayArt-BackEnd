@@ -43,6 +43,7 @@ db.users.insert()
 
 db.artist.insert(){
 	"idUser":0,
+	"banner": "url de la imagen",
 
 	"images": [{
 		"idImage":1

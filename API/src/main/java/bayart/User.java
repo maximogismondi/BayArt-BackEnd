@@ -2,32 +2,33 @@ package bayart;
 import java.util.HashMap;
 import java.util.Date;
 import java.util.ArrayList;
+import java.util.Map;
 
 
-public class User{
+public class User {
     private Integer idUser;
-    private String  username;
-    private String  eMail;
-    private String  password;
-    private Date    birthDate;
-    private Date    inscriptionDate;
+    private String username;
+    private String eMail;
+    private String password;
+    private Date birthDate;
+    private Date inscriptionDate;
     private Integer bpoints;
-    private String  profilePicture;
+    private String profilePicture;
     private Boolean libraryPrivacy;
     private Boolean historyStore;
     private Boolean theme;
-    private String  language;
+    private String language;
     private Boolean notificationsNewPublication;
     private Boolean notificationsSubEnding;
     private Boolean notificationsBuyAlert;
     private Boolean notificationsInformSponsor;
-    private HashMap<Integer,Date> subscriptions;
-    private HashMap<Integer,HashMap<Integer,Date>> sponsors;
+    private HashMap<Integer, Date> subscriptions;
+    private HashMap<Integer, HashMap<Integer, Date>> sponsors;
     private ArrayList<Integer> bookmarks;
-    private ArrayList<String>  history;
-    private ArrayList<Integer> purchased;
+    private ArrayList<String> history;
+    private Map<Integer,Map<Date,Boolean>> purchased;
 
-    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean libraryPrivacy, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, HashMap<Integer, Date> subscriptions, HashMap<Integer, HashMap<Integer, Date>> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, ArrayList<Integer> purchased) {
+    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean libraryPrivacy, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, HashMap<Integer, Date> subscriptions, HashMap<Integer, HashMap<Integer, Date>> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, Map<Integer,Map<Date,Boolean>> purchased) {
         this.idUser = idUser;
         this.username = username;
         this.eMail = eMail;
@@ -72,7 +73,7 @@ public class User{
         this.sponsors = new HashMap<>();
         this.bookmarks = new ArrayList<>();
         this.history = new ArrayList<>();
-        this.purchased = new ArrayList<>();
+        this.purchased = new HashMap<>();
     }
 
     public Integer getIdUser() {
@@ -235,11 +236,13 @@ public class User{
         this.history = history;
     }
 
-    public ArrayList<Integer> getPurchased() {
+    public Map<Integer,Map<Date,Boolean>> getPurchased() {
         return purchased;
     }
 
-    public void setPurchased(ArrayList<Integer> purchased) {
+    public void setPurchased(Map<Integer,Map<Date,Boolean>> purchased) {
         this.purchased = purchased;
     }
 }
+
+
