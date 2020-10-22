@@ -1,15 +1,7 @@
 package bayart;
-import org.springframework.boot.json.GsonJsonParser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.bind.annotation.*;
-
-import java.lang.reflect.Array;
-import java.time.Duration;
-import java.time.temporal.Temporal;
 import java.util.*;
 
 
@@ -47,12 +39,10 @@ public class BayArtController {
     }
 
     //Register
-    @RequestMapping(path = "/register/{username} {eMail} {confirmEMail} {password} {confirmPassword} {day} {month} {year} {type}", method = RequestMethod.POST)
+    @RequestMapping(path = "/register/{username} {eMail} {password} {day} {month} {year} {type}", method = RequestMethod.POST)
     public ResponseEntity<Object> confirmRegisterData(@PathVariable String username,
                                                       @PathVariable String eMail,
-                                                      @PathVariable String confirmEMail,
                                                       @PathVariable String password,
-                                                      @PathVariable String confirmPassword,
                                                       @PathVariable String day,
                                                       @PathVariable String month,
                                                       @PathVariable String year,
@@ -197,7 +187,7 @@ public class BayArtController {
 
     }
 
-    private ArrayList<String> desconcatenarFiltros(String filters){
+    public ArrayList<String> desconcatenarFiltros(String filters){
 
         ArrayList<String> filtros = new ArrayList<>();
         String filtro = "";
@@ -215,7 +205,7 @@ public class BayArtController {
     }
 
     //Store
-    private Image imagenesDisponible(Artist artista,  ArrayList<String> listaFiltros, Integer maxPrice){
+    private Image imagenDisponible(Artist artista,  ArrayList<String> listaFiltros, Integer maxPrice){
 
         for(Image imagenAux : artista.getImageList()){
             if (!listaImages.contains(imagenAux) && ((maxPrice == 0 && imagenAux.getPrice() == 0) ||
@@ -231,7 +221,7 @@ public class BayArtController {
             }
         }
 
-        return new Image(null,null,null,null,null,null,null,null,null);
+        return new Image(null,null,null,null,null,null,null,null,null,null);
 
     }
 
@@ -259,7 +249,7 @@ public class BayArtController {
             for(Integer idImage : idsImagenesBookmark) {
                 parametros.clear();
                 parametros.put("idImage", Integer.toString(idImage));
-                Image imagenBookmark = (Image) accesoABase.obtenerImagen(parametros).get(0);
+                Image imagenBookmark = (Image) accesoABase.obtenerImagenes(parametros).get(0);
                 parametros.clear();
                 parametros.put("idUser", Integer.toString(imagenBookmark.getIdUser()));
                 Artist creadorImagen = (Artist) accesoABase.obtenerArtistas(parametros).get(0);
@@ -283,7 +273,7 @@ public class BayArtController {
                     findArtist = true;
                     boolean findImage = false;
 
-                    Image imagenAMostrar = imagenesDisponible(artista, listaFiltros, maxPrice);
+                    Image imagenAMostrar = imagenDisponible(artista, listaFiltros, maxPrice);
                     if(imagenAMostrar.getIdImage() != null){
                         listaImages.add(imagenAMostrar);
                     }
@@ -325,7 +315,7 @@ public class BayArtController {
                     findArtist = true;
                     boolean findImage = false;
 
-                    Image imagenAMostrar = imagenesDisponible(artista, listaFiltros, 0);
+                    Image imagenAMostrar = imagenDisponible(artista, listaFiltros, 0);
                     if(imagenAMostrar.getIdImage() != null){
                         listaImages.add(imagenAMostrar);
                     }
@@ -340,8 +330,6 @@ public class BayArtController {
 
     }
 
-    //Search
-
 
     //Individual Image
     @RequestMapping(path = "/individualImage/{idImage}", method = RequestMethod.GET)
@@ -352,7 +340,7 @@ public class BayArtController {
         Map<String, String> parametros = new HashMap<>();
                             parametros.put("idImage",idImage);
 
-        Image imagen = (Image) accesoABase.obtenerImagen(parametros).get(0);
+        Image imagen = (Image) accesoABase.obtenerImagenes(parametros).get(0);
 
         parametros.clear();
         parametros.put("idArtist",Integer.toString(imagen.getIdUser()));
@@ -398,25 +386,39 @@ public class BayArtController {
     }
 
     //Busqueda
-    @RequestMapping(path="/search/{word} viewAs = {userType}",method=RequestMethod.GET)
-    public ResponseEntity<Object>getSearchResults(@PathVariable String word,
+
+    @RequestMapping(path="/seach/{idUser} {word} filters = {filters} viewAs = {userType}",method=RequestMethod.GET)
+    public ResponseEntity<Object>getSearchResults(@PathVariable String idUser,
+                                                  @PathVariable String word,
+                                                  @PathVariable String filters,
                                                   @PathVariable User userType){
 
-        Map<String,Object> infoResponse = new HashMap<>();
-        ArrayList<Image>   resultImages = new ArrayList<>();
+        Map<String,Object> infoResponse  = new HashMap<>();
+        ArrayList<Image>   resultImages  = new ArrayList<>();
+        Map<String,String> requirements  = new HashMap<>();
+                           requirements.put("idUser",idUser);
+
+        accesoABase.obtenerUsuarios(requirements).get(0).getHistory().add(word);
+
+        requirements.clear();
+        requirements.put("word",word);
 
         accesoABase.conectarAColeccion("Images");
 
-        resultImages = accesoABase.obtainImages(word);
+        if(!filters.isEmpty()) {
+            requirements.put("tags", filters);
+        }
 
-        infoResponse.put("images",asociarImagenArtista(resultImages));
+        resultImages = accesoABase.obtenerImagenes(requirements);
+
+        infoResponse.put("images",resultImages);
 
         if(resultImages.isEmpty()){
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
-
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
+
 
     //Library
     @RequestMapping(path="/library/{idUser} viewAs = {userType} index = {index}",method=RequestMethod.GET)
@@ -442,7 +444,7 @@ public class BayArtController {
         for(Map.Entry<Integer,Map<Date,Boolean>> imagenComprada : listaImagenesCompradas.entrySet()){
             if(i >= start && i < lim){
                 parametros.put("idImage",Integer.toString(imagenComprada.getKey()));
-                Image imagen = accesoABase.obtenerImagen(parametros).get(0);
+                Image imagen = accesoABase.obtenerImagenes(parametros).get(0);
                 library.add(imagen);
             } i++;
         }
@@ -464,7 +466,7 @@ public class BayArtController {
         switch (field){
             case "banner":
             case "profilePicture":
-                accesoABase.changeImgParameters();
+                //accesoABase.changeImgParameters();
                 break;
             default:
                 accesoABase.changeStringParameters(idUser,field,change);
@@ -495,7 +497,6 @@ public class BayArtController {
                 resultado.add(accesoABase.obtenerArtistas(parametros).get(0).getUsername());
             }
         } else {
-            Map<String,Integer> resultado = new HashMap<>();
 
             parametros.clear();
             parametros.put("idUser",idUser);
@@ -508,16 +509,46 @@ public class BayArtController {
 
                 parametros.clear();
                 parametros.put("idImage",Integer.toString(imagenAux.getKey()));
-
-                purchasedImages.put(accesoABase.obtenerImagen(parametros).get(0).getName(), accesoABase.obtenerImagen(parametros).get(0).getPrice);
+                purchasedImages.put(accesoABase.obtenerImagenes(parametros).get(0).getName(), accesoABase.obtenerImagenes(parametros).get(0).getPrice());
             }
 
-            
+            parametros.clear();
+            parametros.put("idUser",idUser);
 
+            ArrayList<Sponsor> sponsors = accesoABase.obtenerUsuarios(parametros).get(0).getSponsors();
+
+            Map<String,Integer> sponsoredArtists = new HashMap<>();
+
+            for(Sponsor sponsorAux : sponsors){
+                parametros.clear();
+                parametros.put("idUser",Integer.toString(sponsorAux.getIdArtist()));
+                sponsoredArtists.put(accesoABase.obtenerArtistas(parametros).get(0).getUsername(),sponsorAux.getInvertedPoints());
+            }
+
+            parametros.clear();
+            parametros.put("idUser",idUser);
+
+            Map<Integer, Date> subscriptionsMap = accesoABase.obtenerUsuarios(parametros).get(0).getSubscriptions();
+
+            Map<String,Integer> subscriptions = new HashMap<>();
+
+            for(Map.Entry<Integer,Date> subAux : subscriptionsMap.entrySet()){
+                parametros.clear();
+                parametros.put("idUser",Integer.toString(subAux.getKey()));
+                subscriptions.put(accesoABase.obtenerArtistas(parametros).get(0).getUsername(),100);
+            }
+
+            Map<String,Map<String,Integer>> resultado = new HashMap<>();
+                                            resultado.put("purchasedImages",purchasedImages);
+                                            resultado.put("sponsoredArtists",sponsoredArtists);
+                                            resultado.put("subscriptions",subscriptions);
+
+            infoResponse.put("resultado", resultado);
         }
 
         return  new ResponseEntity<>(infoResponse,HttpStatus.OK);
     }
+
     //Upload Image
 
 }

@@ -1,5 +1,6 @@
 package bayart;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Date;
 import java.util.ArrayList;
@@ -7,7 +8,8 @@ import java.util.ArrayList;
 public class Image{
 	private Integer idImage;
 	private Integer idUser;
-	private String name;
+    private File file;
+    private String name;
 	private Integer price;
 	private Date    postDate;
 	private String  description;
@@ -15,9 +17,10 @@ public class Image{
 	private ArrayList<String> tags;
 	private HashMap<Integer,HashMap<Date,String>> comments;
 
-    public Image(Integer idImage, Integer idUser, String name, Integer price, Date postDate, String description, String url, ArrayList<String> tags, HashMap<Integer, HashMap<Date, String>> comments) {
+    public Image(Integer idImage, Integer idUser, File file, String name, Integer price, Date postDate, String description, String url, ArrayList<String> tags, HashMap<Integer, HashMap<Date, String>> comments) {
         this.idImage 	 = idImage;
         this.idUser      = idUser;
+        this.file        = file;
         this.name 		 = name;
         this.price 		 = price;
         this.postDate 	 = postDate;
@@ -33,6 +36,10 @@ public class Image{
 
     public Integer getIdUser() {
         return idUser;
+    }
+
+    public File getFile() {
+        return file;
     }
 
     public String getName() {
@@ -69,6 +76,10 @@ public class Image{
 
     public void setIdUser(Integer idUser) {
         this.idUser = idUser;
+    }
+
+    public void setFile(File file) {
+        this.file = file;
     }
 
     public void setName(String name) {

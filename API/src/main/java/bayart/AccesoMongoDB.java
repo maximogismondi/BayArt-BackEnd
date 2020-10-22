@@ -10,22 +10,17 @@ package bayart;
 
     import java.util.*;
     import java.lang.Exception;
+    import java.io.File;
 
 import static com.mongodb.client.model.Filters.*;
 
 @Service
 public class AccesoMongoDB {
+    private BayArtController controller = new BayArtController();
     private MongoDatabase baseDeDatos;
     private MongoCollection<Document> coleccion;
     private String host;
     private int puerto;
-
-    public AccesoMongoDB() {
-        this.host = "localhost";
-        this.puerto = 27017;
-        this.conectarABaseDeDatos("Bayart");
-        this.conectarAColeccion("Users");
-    }
 
     public void conectarABaseDeDatos(String nombreBaseDeDatos) {
         try {
@@ -35,7 +30,13 @@ public class AccesoMongoDB {
         } catch (Exception e) {
             System.out.println(e);
         }
+    }
 
+    public AccesoMongoDB() {
+        this.host = "localhost";
+        this.puerto = 27017;
+        this.conectarABaseDeDatos("Bayart");
+        this.conectarAColeccion("Users");
     }
 
     public void conectarAColeccion(String nombreDeColeccion) {
@@ -74,7 +75,6 @@ public class AccesoMongoDB {
         //Va recorriendo las diferentes tuplas obtenidas en "resultados"
         //creando objetos de tipo "User" y agregandolos al array "foundUsers"
         while (iterador.hasNext()) {
-
             Document document = (Document) iterador.next();
 
             Integer idUser = document.getInteger("idUser");
@@ -94,22 +94,19 @@ public class AccesoMongoDB {
             Boolean notificationsBuyAlert = document.getBoolean("notificationsBuyAlert");
             Boolean notificationsInformSponsor = document.getBoolean("notificationsInformSponsor");
             HashMap<Integer, Date> subscriptions = (HashMap<Integer, Date>) document.get("subscriptions");
-            HashMap<Integer, HashMap<Integer, Date>> sponsors = (HashMap<Integer, HashMap<Integer, Date>>) document.get("sponsors");
+            ArrayList<Sponsor> sponsors = (ArrayList<Sponsor>) document.get("sponsors");
             ArrayList<Integer> bookmarks = (ArrayList<Integer>) document.get("bookmarks");
             ArrayList<String> history = (ArrayList<String>) document.get("history");
-            Map<Map<Integer,Date>,Boolean> purchased = (Map<Map<Integer,Date>,Boolean>) document.get("purchased");
+            Map<Integer, Map<Date, Boolean>> purchased = (Map<Integer, Map<Date, Boolean>>) document.get("purchased");
 
             User usuario = new User(idUser, userName, eMail, password, birthDate, inscriptionDate,
                     bpoints, profilePicture, libraryPrivacy, historyStore, theme,
                     language, notificationsNewPublication, notificationsSubEnding,
                     notificationsBuyAlert, notificationsInformSponsor, subscriptions,
                     sponsors, bookmarks, history, purchased);
-
             foundUsers.add(usuario);
         }
-
         return foundUsers;
-
     }
 
     public ArrayList<Artist> obtenerArtistas(Map<String, String> valoresRequeridos) {
@@ -151,6 +148,124 @@ public class AccesoMongoDB {
         }
 
         return foundArtists;
+
+    }
+
+    public ArrayList<Image> obtenerImagenes(Map<String, String> requiredValue){
+
+        ArrayList<Image>   resultImages = new ArrayList<>();//lista de imágenes que va a retornar
+
+        Map<String,Object> requirements = new HashMap<>();
+
+        for(Map.Entry<String,String>valor:requiredValue.entrySet()){
+            if(valor.getKey().equals("word")){//si existe un filtro por palabra
+                requirements.put("name",valor.getValue());//para buscar por nombre y descripción
+                requirements.put("description",valor.getValue());
+            }
+            if(valor.getKey().equals("tags")){//si existe un filtro por tag
+                requirements.put(valor.getKey(), controller.desconcatenarFiltros(valor.getValue()));
+            }
+            if(valor.getKey().equals("idImage")){//para buscar por idImage
+                requirements.put(valor.getKey(),valor.getValue());
+            }
+            if(valor.getKey().equals("maxPrice")){//si existe un filtro por maxPrice
+                requirements.put(valor.getKey(),valor.getValue());
+            }
+        }
+
+        //almacena los requisitos en la lista de bson
+        List<Bson>      filtros    = new ArrayList<>();
+
+        for (Map.Entry<String,Object> atributo : requirements.entrySet()) {
+            if(atributo.getKey().equals("idImage")){
+                Bson contains= Filters.eq(atributo.getKey(),atributo.getValue());
+                filtros.add(contains);
+            }
+            else{
+                Bson filtro= exists("idImage");
+                filtros.add(filtro);
+            }
+        }
+
+
+        //Forma un Archivo BSON con los filtros anteriormente formados
+        Bson requisitosACumplir = or(filtros);
+
+        //Consigue las tuplas de la base que coincidan con los valores del BSON anteriormente creado
+        FindIterable resultados = coleccion.find(requisitosACumplir);
+
+        //Crea un cursor con el cual recorrer los resultados
+        MongoCursor iterador = resultados.iterator();
+
+        while(iterador.hasNext()) {
+
+            Document document = (Document) iterador.next();
+
+            Integer idImage = document.getInteger("idImage");
+            Integer idUser = document.getInteger("idUser");
+            File file= (File)document.get("file");
+            String name = document.getString("name");
+            Integer price = document.getInteger("price");
+            Date postDate = document.getDate("postDate");
+            String description = document.getString("description");
+            String url = document.getString("url");
+            ArrayList<String> tags = (ArrayList<String>) document.get("tags");
+            HashMap<Integer, HashMap<Date, String>> comments = (HashMap<Integer, HashMap<Date, String>>) document.get("coments");
+
+
+            Image image = new Image(idImage,idUser, file,name,price,postDate,description,url,tags,comments);
+            resultImages.add(image);
+
+        }
+        //alerta: código falopa
+        for(Map.Entry<String,Object>parametro:requirements.entrySet()){
+            ArrayList<Integer>idsAEliminar=new ArrayList<>();//ids de las imágenes que se van a eliminar si no tienen al menos un tag
+            switch(parametro.getKey()){
+                case "tags":
+                    ArrayList<String> tags        =new ArrayList<>();//listado de tags pasado por parámetro
+                    tags                          = (ArrayList<String>) parametro.getValue();//se obtiene la lista de tags pasada por parámetro
+
+                    for(Image image:resultImages){//recorre las imágenes resultado de los filtros para filtrar por tags
+                        Boolean contieneTag=false;//si no contiene ningún tag igual a los pasados por parámetro, elimina esa imagen
+                        for(String tag:tags){
+                            for(String tagImagen:image.getTags()){
+                                if(tagImagen.equals(tag)){
+                                    contieneTag=true;
+                                }
+                            }
+                        }
+                        if(!contieneTag){
+                            resultImages.remove(image);
+                        }
+                    }
+                    break;
+                case "maxPrice":
+                    Integer maxPrice= (Integer) parametro.getValue();
+                    idsAEliminar.clear();
+                    for(Image image:resultImages){//recorre las imágenes resultado de los filtros para filtrar por precio
+                        if(image.getPrice()>maxPrice){
+                            resultImages.remove(image);//si es mayor, se manda a eliminar
+                        }
+                    }
+                    break;
+                case "name":
+                    for(Image image:resultImages){
+                        if(!image.getName().contains((CharSequence) parametro.getValue())){
+                            resultImages.remove(image);
+                        }
+                    }
+                    break;
+                case "description":
+                    for(Image image:resultImages){
+                        if(!image.getDescription().contains((CharSequence) parametro.getValue())){
+                            resultImages.remove(image);
+                        }
+                    }
+                    break;
+            }
+        }
+
+        return resultImages;
 
     }
 

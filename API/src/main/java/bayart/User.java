@@ -22,13 +22,13 @@ public class User {
     private Boolean notificationsSubEnding;
     private Boolean notificationsBuyAlert;
     private Boolean notificationsInformSponsor;
-    private HashMap<Integer, Date> subscriptions;
-    private HashMap<Integer, HashMap<Integer, Date>> sponsors;
+    private Map<Integer, Date> subscriptions;
+    private ArrayList<Sponsor> sponsors;
     private ArrayList<Integer> bookmarks;
     private ArrayList<String> history;
     private Map<Integer,Map<Date,Boolean>> purchased;
 
-    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean libraryPrivacy, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, HashMap<Integer, Date> subscriptions, HashMap<Integer, HashMap<Integer, Date>> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, Map<Integer,Map<Date,Boolean>> purchased) {
+    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean libraryPrivacy, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, Map<Integer, Date> subscriptions, ArrayList<Sponsor> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, Map<Integer,Map<Date,Boolean>> purchased) {
         this.idUser = idUser;
         this.username = username;
         this.eMail = eMail;
@@ -70,7 +70,7 @@ public class User {
         this.notificationsBuyAlert = true;
         this.notificationsInformSponsor = true;
         this.subscriptions = new HashMap<>();
-        this.sponsors = new HashMap<>();
+        this.sponsors = new ArrayList<>();
         this.bookmarks = new ArrayList<>();
         this.history = new ArrayList<>();
         this.purchased = new HashMap<>();
@@ -204,19 +204,19 @@ public class User {
         this.notificationsInformSponsor = notificationsInformSponsor;
     }
 
-    public HashMap<Integer, Date> getSubscriptions() {
+    public Map<Integer, Date> getSubscriptions() {
         return subscriptions;
     }
 
-    public void setSubscriptions(HashMap<Integer, Date> subscriptions) {
+    public void setSubscriptions(Map<Integer, Date> subscriptions) {
         this.subscriptions = subscriptions;
     }
 
-    public HashMap<Integer, HashMap<Integer, Date>> getSponsors() {
+    public ArrayList<Sponsor> getSponsors() {
         return sponsors;
     }
 
-    public void setSponsors(HashMap<Integer, HashMap<Integer, Date>> sponsors) {
+    public void setSponsors(ArrayList<Sponsor> sponsors) {
         this.sponsors = sponsors;
     }
 

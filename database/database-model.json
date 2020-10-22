@@ -5,36 +5,38 @@ db.users.insert()
 	"eMail":"juan.moggia@gmail.com",
 	"password":"30052003",
 	"birthDate": "30/05/2003",
-	"inscription-date":"18/09/2020",
+	"inscriptionDate":"2020/10/18",
 	"bpoints": 1000,
 
-	"profilePicture": "url or code color",
-	"libraryPrivacy": "public or private",
+	"profilePicture": 1, //idImage
+	"libraryPrivacy": true,
 	"historyStore": true,
-	"theme": "dark",/*or light*/
-	"language":"english",
+	"theme": true,
+	"language": "english",
 
 	"notificationsNewPublication":true,
 	"notificationsSubEnding":true,
 	"notificationsBuyAlert":true,
-	"notificationsInformSponsor":true,	
+	"notificationsInformSponsor":true,
 
 	"subscriptions": [{
 		"idArtist":1,
-		"subscriptionDate":"18/09/2020"
+		"subscriptionDate":"2020/10/18"
 	}],
 	"sponsors": [{
 		"idSponsor":0,
 		"idArtist":1,
 		"invertPorcentage":2, /*%*/
-		"sponsorDate":"18/09/2020"/*1 mes*/ 
+		"invertBPoints": 1000,
+		"sponsorDate":"2020/10/18"/*1 mes*/
 	}],
 	"bookmarks": [{
 		"idImage":1
 	}],
 	"purchased-image": [{
 		"idImage":2,
-		"raspberryDisplay":true
+		"raspberryDisplay":true,
+		"purchaseDate": "2020/10/18"
 	}],
 	"history": [{
 		"searchText": "picasso"
@@ -60,7 +62,7 @@ db.image.insert(){
 	"idUser":0,
 	"name":"Yoda Boliviano",
 	"price":200, //en puntos y puede ser nulo si no esta a la venta
-	"postDate": "18/09/2020",
+	"postDate": "2020/10/18",
 	"description":"Yoda era uno de los más renombrados y poderosos maestros Jedi durante toda la historia de la Galaxia, y uno de los pocos Jedis de la República Galáctica en sobrevivir hasta la Guerra Civil Galáctica. Siendo el maestro más perceptivo de la Orden, él ejerció como Gran Maestro durante las Guerras Clon y la fundación del Imperio Galáctico, después de la cual escapó para ocultarse de la Gran Purga Jedi.",
 	
 	"url":"blob:https://web.whatsapp.com/7f9e6d18-3590-480e-bc2b-ec824c78f0ff",
@@ -71,7 +73,6 @@ db.image.insert(){
 	"comments": [{
 		"idUser":1,
 		"comment":"Que lindo te quedo juan",
-		"commentDate":"18/09/2020"
+		"commentDate":"2020/10/18"
 	}]
-	
 }
