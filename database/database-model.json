@@ -9,7 +9,6 @@ db.users.insert()
 	"bpoints": 1000,
 
 	"profilePicture": 1, //idImage
-	"libraryPrivacy": true,
 	"historyStore": true,
 	"theme": true,
 	"language": "english",
@@ -57,15 +56,10 @@ db.artist.insert(){
 }
 
 db.image.insert(){	
-
 	"idImage":0,
 	"idUser":0,
-	"name":"Yoda Boliviano",
 	"price":200, //en puntos y puede ser nulo si no esta a la venta
-	"postDate": "2020/10/18",
 	"description":"Yoda era uno de los más renombrados y poderosos maestros Jedi durante toda la historia de la Galaxia, y uno de los pocos Jedis de la República Galáctica en sobrevivir hasta la Guerra Civil Galáctica. Siendo el maestro más perceptivo de la Orden, él ejerció como Gran Maestro durante las Guerras Clon y la fundación del Imperio Galáctico, después de la cual escapó para ocultarse de la Gran Purga Jedi.",
-	
-	"url":"blob:https://web.whatsapp.com/7f9e6d18-3590-480e-bc2b-ec824c78f0ff",
 	
 	"tags": [{
 		"tagName":"Peliculas"
@@ -75,4 +69,15 @@ db.image.insert(){
 		"comment":"Que lindo te quedo juan",
 		"commentDate":"2020/10/18"
 	}]
+}
+
+db.imageFile.insert(){
+	"idImage": 1,
+    "filename" : "nombre",
+    "aliases" : null,
+    "chunkSize" : NumberLong(261120),
+    "uploadDate" : ISODate("2020-11-21T11:11:111.1111"),
+    "length" : NumberLong(1055824),
+    "contentType" : null,
+    "md5" : "9f90e80c34243ab6fca6298d931bb777"
 }

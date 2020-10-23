@@ -14,7 +14,6 @@ public class User {
     private Date inscriptionDate;
     private Integer bpoints;
     private String profilePicture;
-    private Boolean libraryPrivacy;
     private Boolean historyStore;
     private Boolean theme;
     private String language;
@@ -28,7 +27,7 @@ public class User {
     private ArrayList<String> history;
     private Map<Integer,Map<Date,Boolean>> purchased;
 
-    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean libraryPrivacy, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, Map<Integer, Date> subscriptions, ArrayList<Sponsor> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, Map<Integer,Map<Date,Boolean>> purchased) {
+    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, Map<Integer, Date> subscriptions, ArrayList<Sponsor> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, Map<Integer,Map<Date,Boolean>> purchased) {
         this.idUser = idUser;
         this.username = username;
         this.eMail = eMail;
@@ -37,7 +36,6 @@ public class User {
         this.inscriptionDate = inscriptionDate;
         this.bpoints = bpoints;
         this.profilePicture = profilePicture;
-        this.libraryPrivacy = libraryPrivacy;
         this.historyStore = historyStore;
         this.theme = theme;
         this.language = language;
@@ -61,7 +59,6 @@ public class User {
         this.inscriptionDate = new Date();
         this.bpoints = 0;
         this.profilePicture = "";
-        this.libraryPrivacy = true;
         this.historyStore = true;
         this.theme = true;
         this.language = "";
@@ -138,14 +135,6 @@ public class User {
 
     public void setProfilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
-    }
-
-    public Boolean getLibraryPrivacy() {
-        return libraryPrivacy;
-    }
-
-    public void setLibraryPrivacy(Boolean libraryPrivacy) {
-        this.libraryPrivacy = libraryPrivacy;
     }
 
     public Boolean getHistoryStore() {

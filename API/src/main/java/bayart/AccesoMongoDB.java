@@ -1,13 +1,21 @@
 package bayart;
+    import com.fasterxml.jackson.core.JsonProcessingException;
+    import com.fasterxml.jackson.databind.ObjectMapper;
+    import com.mongodb.DB;
     import com.mongodb.DBObject;
     import com.mongodb.MongoClient;
     import com.mongodb.client.*;
     import com.mongodb.client.model.Filters;
+    import com.mongodb.gridfs.GridFS;
+    import com.mongodb.gridfs.GridFSDBFile;
+    import com.mongodb.gridfs.GridFSInputFile;
     import com.mongodb.util.JSON;
+    import org.apache.commons.io.FileUtils;
     import org.bson.Document;
     import org.bson.conversions.Bson;
     import org.springframework.stereotype.Service;
 
+    import java.io.IOException;
     import java.util.*;
     import java.lang.Exception;
     import java.io.File;
@@ -16,15 +24,16 @@ import static com.mongodb.client.model.Filters.*;
 
 @Service
 public class AccesoMongoDB {
-    private BayArtController controller = new BayArtController();
-    private MongoDatabase baseDeDatos;
-    private MongoCollection<Document> coleccion;
     private String host;
     private int puerto;
+    private MongoDatabase baseDeDatos;
+    private MongoCollection<Document> coleccion;
+    private DB db;
 
     public void conectarABaseDeDatos(String nombreBaseDeDatos) {
         try {
             MongoClient mongo = new MongoClient(host, puerto);
+            db = new DB(mongo,"bayart");
             this.baseDeDatos = mongo.getDatabase(nombreBaseDeDatos);
 
         } catch (Exception e) {
@@ -35,8 +44,19 @@ public class AccesoMongoDB {
     public AccesoMongoDB() {
         this.host = "localhost";
         this.puerto = 27017;
-        this.conectarABaseDeDatos("Bayart");
-        this.conectarAColeccion("Users");
+        this.conectarABaseDeDatos("bayart");
+        this.conectarAColeccion("users");
+    }
+
+    public boolean existeLaColeccion(String nombreDeColeccion) {
+        MongoIterable<String> nombreDeColecciones = baseDeDatos.listCollectionNames();
+
+        for (String nombre : nombreDeColecciones) {
+            if (nombre.equals(nombreDeColeccion)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void conectarAColeccion(String nombreDeColeccion) {
@@ -46,6 +66,23 @@ public class AccesoMongoDB {
             baseDeDatos.createCollection(nombreDeColeccion);
             this.coleccion = baseDeDatos.getCollection(nombreDeColeccion);
         }
+    }
+
+    private  ArrayList<String> desconcatenarFiltros(String filters){
+
+        ArrayList<String> filtros = new ArrayList<>();
+        String filtro = "";
+
+        for (int i = 0; i < filters.length(); i++) {
+            if(!(filters.charAt(i) == ',')){
+                filtro.concat(Character.toString(filters.charAt(i)));
+            } else{
+                filtros.add(filtro);
+                filtro = "";
+            }
+        }
+        return filtros;
+
     }
 
     public ArrayList<User> obtenerUsuarios(Map<String, String> valoresRequeridos) {
@@ -85,7 +122,6 @@ public class AccesoMongoDB {
             Date inscriptionDate = document.getDate("inscriptionDate");
             Integer bpoints = document.getInteger("bpoints");
             String profilePicture = document.getString("profilePicture");
-            Boolean libraryPrivacy = document.getBoolean("libraryPrivacy");
             Boolean historyStore = document.getBoolean("historyStorage");
             Boolean theme = document.getBoolean("theme");
             String language = document.getString("language");
@@ -100,7 +136,7 @@ public class AccesoMongoDB {
             Map<Integer, Map<Date, Boolean>> purchased = (Map<Integer, Map<Date, Boolean>>) document.get("purchased");
 
             User usuario = new User(idUser, userName, eMail, password, birthDate, inscriptionDate,
-                    bpoints, profilePicture, libraryPrivacy, historyStore, theme,
+                    bpoints, profilePicture, historyStore, theme,
                     language, notificationsNewPublication, notificationsSubEnding,
                     notificationsBuyAlert, notificationsInformSponsor, subscriptions,
                     sponsors, bookmarks, history, purchased);
@@ -163,7 +199,7 @@ public class AccesoMongoDB {
                 requirements.put("description",valor.getValue());
             }
             if(valor.getKey().equals("tags")){//si existe un filtro por tag
-                requirements.put(valor.getKey(), controller.desconcatenarFiltros(valor.getValue()));
+                requirements.put(valor.getKey(), desconcatenarFiltros(valor.getValue()));
             }
             if(valor.getKey().equals("idImage")){//para buscar por idImage
                 requirements.put(valor.getKey(),valor.getValue());
@@ -202,6 +238,7 @@ public class AccesoMongoDB {
             Document document = (Document) iterador.next();
 
             Integer idImage = document.getInteger("idImage");
+            Integer idImageFile = document.getInteger("idImageFile");
             Integer idUser = document.getInteger("idUser");
             File file= (File)document.get("file");
             String name = document.getString("name");
@@ -213,13 +250,12 @@ public class AccesoMongoDB {
             HashMap<Integer, HashMap<Date, String>> comments = (HashMap<Integer, HashMap<Date, String>>) document.get("coments");
 
 
-            Image image = new Image(idImage,idUser, file,name,price,postDate,description,url,tags,comments);
+            Image image = new Image(idImage, idImageFile, idUser, name, price, postDate, description,tags,comments);
             resultImages.add(image);
 
         }
         //alerta: código falopa
         for(Map.Entry<String,Object>parametro:requirements.entrySet()){
-            ArrayList<Integer>idsAEliminar=new ArrayList<>();//ids de las imágenes que se van a eliminar si no tienen al menos un tag
             switch(parametro.getKey()){
                 case "tags":
                     ArrayList<String> tags        =new ArrayList<>();//listado de tags pasado por parámetro
@@ -240,10 +276,9 @@ public class AccesoMongoDB {
                     }
                     break;
                 case "maxPrice":
-                    Integer maxPrice= (Integer) parametro.getValue();
-                    idsAEliminar.clear();
+                    Integer maxPrice = (Integer) parametro.getValue();
                     for(Image image:resultImages){//recorre las imágenes resultado de los filtros para filtrar por precio
-                        if(image.getPrice()>maxPrice){
+                        if(image.getPrice() > maxPrice){
                             resultImages.remove(image);//si es mayor, se manda a eliminar
                         }
                     }
@@ -263,13 +298,16 @@ public class AccesoMongoDB {
                     }
                     break;
             }
+            for (Image resultImage: resultImages){
+                obtenerImagenEnMongoDB("D:/Desktop/imagenes", resultImage.getName());
+            }
         }
 
         return resultImages;
 
     }
 
-    public void insertarUsuario(String username, String eMail, String password, Date inscriptionDate, String artista) {
+    public void insertarUsuario(String username, String eMail, String password, Date inscriptionDate, String type) {
 
         conectarAColeccion("Users");
 
@@ -281,7 +319,6 @@ public class AccesoMongoDB {
         nuevoDocumento.append("inscriptionDate", inscriptionDate);
         nuevoDocumento.append("birthDate", new Date());
         nuevoDocumento.append("bpoints", 1000);
-        nuevoDocumento.append("libraryPrivacy", true);
         nuevoDocumento.append("historyStorage", true);
         nuevoDocumento.append("theme", true);
         nuevoDocumento.append("language", "es");
@@ -297,7 +334,7 @@ public class AccesoMongoDB {
 
         coleccion.insertOne(nuevoDocumento);
 
-        if (artista == "artist") {
+        if (type == "artist") {
             conectarAColeccion("Artists");
 
             HashMap<String, String> parametrosUsuario = new HashMap<>();
@@ -317,7 +354,7 @@ public class AccesoMongoDB {
 
     }//en el php el archivo tiene que crear un .json con todos los datos
 
-    public void addImage(String idUser, String idImage, String action) {
+    public void addImageToUser(String idUser, String idImage, String action) {
         conectarAColeccion("Users");
 
         Map<String, String> parametros = new HashMap<>();
@@ -339,17 +376,6 @@ public class AccesoMongoDB {
         DBObject push = (DBObject) JSON.parse(json);
 
         coleccion.updateOne(requisitosACumplir, (Bson)push);
-    }
-
-    public boolean existeLaColeccion(String nombreDeColeccion) {
-        MongoIterable<String> nombreDeColecciones = baseDeDatos.listCollectionNames();
-
-        for (String nombre : nombreDeColecciones) {
-            if (nombre.equals(nombreDeColeccion)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public void changeStringParameters(String idUser, String field, String change){
@@ -380,6 +406,61 @@ public class AccesoMongoDB {
         DBObject push = (DBObject) JSON.parse(json);
 
         coleccion.updateOne(requisitosACumplir, (Bson)push);
+
+    }
+
+    //--------------------------------------------------------------------------------------------------
+
+    public void guardarImagenEnMongoDB(String rutaUbicacionImagen, String nombreObjetoFile, String idUser, Integer price, String description, ArrayList<String>tags) throws IOException {
+        File imagen= new File(rutaUbicacionImagen);
+        GridFS gfsPhoto = new GridFS(db,"imageFile");
+        GridFSInputFile gfsFile = gfsPhoto.createFile(imagen);
+        gfsFile.setFilename(nombreObjetoFile);
+        gfsFile.save();
+
+        conectarAColeccion("Images");
+
+        Document nuevoDocumento = new Document();
+        nuevoDocumento.append("idImage", null);
+        nuevoDocumento.append("idImageFile", null);
+        nuevoDocumento.append("idUser",idUser);
+        nuevoDocumento.append("name",nombreObjetoFile);
+        nuevoDocumento.append("price",price);
+        nuevoDocumento.append("postDate",new Date());
+        nuevoDocumento.append("description",description);
+        nuevoDocumento.append("tags",tags);
+        nuevoDocumento.append("tags",new ArrayList<>());
+
+        coleccion.insertOne(nuevoDocumento);
+    }
+
+    public void obtenerImagenEnMongoDB(String rutaDondeGuardarImagen, String nombreObjetoFile) {
+        try {
+
+            GridFS gfsPhoto = new GridFS(db,"imageFile");
+            GridFSDBFile imageForOutput = gfsPhoto.findOne(nombreObjetoFile);
+            File imagen = new File(rutaDondeGuardarImagen);
+            imageForOutput.writeTo(imagen);
+
+            byte[] fileContent = FileUtils.readFileToByteArray(imagen);
+            String encodedString = Base64.getEncoder().encodeToString(fileContent);
+
+            HashMap<String,Object> infoImagen = new HashMap<>();
+            infoImagen.put("nombre",imagen.getName());
+            infoImagen.put("codificacion",encodedString);
+
+            ObjectMapper mapper = new ObjectMapper();
+            String jsonString = mapper.writeValueAsString(infoImagen);
+            System.out.println(jsonString);
+
+            byte[] decodedBytes = Base64.getDecoder().decode(encodedString);
+            FileUtils.writeByteArrayToFile(new File(rutaDondeGuardarImagen),decodedBytes);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 

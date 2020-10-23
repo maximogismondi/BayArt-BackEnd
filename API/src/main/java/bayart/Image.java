@@ -7,25 +7,23 @@ import java.util.ArrayList;
 
 public class Image{
 	private Integer idImage;
+	private Integer idImageFile;
 	private Integer idUser;
-    private File file;
-    private String name;
+    private String  name;
 	private Integer price;
 	private Date    postDate;
 	private String  description;
-	private String  url;
 	private ArrayList<String> tags;
 	private HashMap<Integer,HashMap<Date,String>> comments;
 
-    public Image(Integer idImage, Integer idUser, File file, String name, Integer price, Date postDate, String description, String url, ArrayList<String> tags, HashMap<Integer, HashMap<Date, String>> comments) {
+    public Image(Integer idImage,Integer idImageFile, Integer idUser, String name, Integer price, Date postDate, String description, ArrayList<String> tags, HashMap<Integer, HashMap<Date, String>> comments) {
         this.idImage 	 = idImage;
+        this.idImageFile = idImageFile;
         this.idUser      = idUser;
-        this.file        = file;
         this.name 		 = name;
         this.price 		 = price;
         this.postDate 	 = postDate;
         this.description = description;
-        this.url 		 = url;
         this.tags 		 = tags;
         this.comments	 = comments;
     }
@@ -34,12 +32,12 @@ public class Image{
         return idImage;
     }
 
-    public Integer getIdUser() {
-        return idUser;
+    public Integer getIdImageFile() {
+        return idImageFile;
     }
 
-    public File getFile() {
-        return file;
+    public Integer getIdUser() {
+        return idUser;
     }
 
     public String getName() {
@@ -58,10 +56,6 @@ public class Image{
         return description;
     }
 
-    public String getUrl() {
-        return url;
-    }
-
     public ArrayList<String> getTags() {
         return tags;
     }
@@ -74,12 +68,12 @@ public class Image{
         this.idImage = idImage;
     }
 
-    public void setIdUser(Integer idUser) {
-        this.idUser = idUser;
+    public void setIdImageFile(Integer idImageFile) {
+        this.idImageFile = idImageFile;
     }
 
-    public void setFile(File file) {
-        this.file = file;
+    public void setIdUser(Integer idUser) {
+        this.idUser = idUser;
     }
 
     public void setName(String name) {
@@ -96,10 +90,6 @@ public class Image{
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
     }
 
     public void setTags(ArrayList<String> tags) {

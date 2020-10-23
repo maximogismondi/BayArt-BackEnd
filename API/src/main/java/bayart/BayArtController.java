@@ -1,7 +1,10 @@
 package bayart;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 import java.util.*;
 
 
@@ -10,12 +13,96 @@ import java.util.*;
 
 public class BayArtController {
 
-
     //Acceso a mongo
-    AccesoMongoDB accesoABase = new AccesoMongoDB();
+    @Autowired
+    private AccesoMongoDB accesoABase;
+
+    public BayArtController(){
+        this.accesoABase = new AccesoMongoDB();
+    }
 
     //lista compartida de imagenes
-    ArrayList<Image> listaImages = new ArrayList<>();
+    private ArrayList<Image> listaImages = new ArrayList<>();
+
+    //Funciones extra
+
+    private Map<Artist, Image> asociarArtista (ArrayList<Image> imagenes){
+
+        Map<String, String> parametros = new HashMap<>();
+        Map<Artist, Image> artistaImagen = new HashMap<>();
+
+        for (Image imagen:imagenes){
+            parametros.clear();
+            parametros.put("idUser", Integer.toString(imagen.getIdUser()));
+            artistaImagen.put(accesoABase.obtenerArtistas(parametros).get(0), imagen);
+        }
+
+        return artistaImagen;
+    }
+    private Map<Artist, Image> asociarImages (ArrayList<Artist> artistas){
+        Map<String, String> parametros = new HashMap<>();
+        Map<Artist, Image> artistaImagen = new HashMap<>();
+
+        for (Artist artista : artistas){
+            parametros.clear();
+            parametros.put("idUser", Integer.toString(artista.getIdUser()));
+            artistaImagen.put(artista, accesoABase.obtenerImagenes(parametros).get(0));
+        }
+
+        return artistaImagen;
+    }
+    private ArrayList<Image> mergeSort(ArrayList<Image> array){
+        ArrayList<Image> splitArrayL = new ArrayList<>();
+        ArrayList<Image> splitArrayR = new ArrayList<>();
+        if(array.size() == 1){
+            return array;
+        } else {
+            for(int i=0 ; i < array.size()/2; i++){
+                splitArrayL.add(array.get(i));
+            }
+            for(int j=array.size()/2 ; j < array.size(); j++){
+                splitArrayR.add(array.get(j));
+            }
+            splitArrayL = mergeSort(splitArrayL);
+            splitArrayR = mergeSort(splitArrayR);
+        }
+
+        int indexL = 0;
+        int indexR = 0;
+
+        for (int i = 0; i < array.size(); ++i){
+            if(indexL == splitArrayL.size()){
+                array.set(i,splitArrayR.get(indexR));
+                indexR++;
+            } else if (indexR == splitArrayR.size()){
+                array.set(i,splitArrayL.get(indexL));
+                indexL++;
+            } else if (splitArrayL.get(indexL).getPostDate().compareTo(splitArrayR.get(indexR).getPostDate()) >= 0) {
+                array.set(i,splitArrayL.get(indexL));
+                indexL++;
+            } else {
+                array.set(i,splitArrayR.get(indexR));
+                indexR++;
+            }
+        }
+        return array;
+    }
+    public  ArrayList<String> desconcatenarFiltros(String filters){
+
+        ArrayList<String> filtros = new ArrayList<>();
+        String filtro = "";
+
+        for (int i = 0; i < filters.length(); i++) {
+            if(!(filters.charAt(i) == ',')){
+                filtro.concat(Character.toString(filters.charAt(i)));
+            } else{
+                filtros.add(filtro);
+                filtro = "";
+            }
+        }
+        return filtros;
+
+    }
 
     //Login
     @RequestMapping(path = "/logIn/{username} {password}", method = RequestMethod.GET)
@@ -83,57 +170,6 @@ public class BayArtController {
 
     }
 
-    Map<Artist, Image> asociarImagenArtista (ArrayList<Image> imagenes){
-
-        Map<String, String> parametros = new HashMap<>();
-        Map<Artist, Image> artistaImagen = new HashMap<>();
-
-        for (Image imagen:imagenes){
-            parametros.clear();
-            parametros.put("idUser", Integer.toString(imagen.getIdUser()));
-            artistaImagen.put(accesoABase.obtenerArtistas(parametros).get(0), imagen);
-        }
-
-        return artistaImagen;
-    }
-
-    ArrayList<Image> mergeSort(ArrayList<Image> array){
-        ArrayList<Image> splitArrayL = new ArrayList<>();
-        ArrayList<Image> splitArrayR = new ArrayList<>();
-        if(array.size() == 1){
-            return array;
-        } else {
-            for(int i=0 ; i < array.size()/2; i++){
-                splitArrayL.add(array.get(i));
-            }
-            for(int j=array.size()/2 ; j < array.size(); j++){
-                splitArrayR.add(array.get(j));
-            }
-            splitArrayL = mergeSort(splitArrayL);
-            splitArrayR = mergeSort(splitArrayR);
-        }
-
-        int indexL = 0;
-        int indexR = 0;
-
-        for (int i = 0; i < array.size(); ++i){
-            if(indexL == splitArrayL.size()){
-                array.set(i,splitArrayR.get(indexR));
-                indexR++;
-            } else if (indexR == splitArrayR.size()){
-                array.set(i,splitArrayL.get(indexL));
-                indexL++;
-            } else if (splitArrayL.get(indexL).getPostDate().compareTo(splitArrayR.get(indexR).getPostDate()) >= 0) {
-                array.set(i,splitArrayL.get(indexL));
-                indexL++;
-            } else {
-                array.set(i,splitArrayR.get(indexR));
-                indexR++;
-            }
-        }
-        return array;
-    }
-
     //Homepage
     @RequestMapping(path = "/homepage/{idUser} index = {index}", method = RequestMethod.GET)
     public ResponseEntity<Object> getImgHomepage_ArtistSubscriptions(@PathVariable Integer idUser,
@@ -181,28 +217,12 @@ public class BayArtController {
             if(i >= start && i < lim) listaImagesIndex.add(artistImage);
             i++;
         }
-        infoResponse.put("images", asociarImagenArtista(listaImagesIndex));
+        infoResponse.put("images", asociarArtista(listaImagesIndex));
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
 
     }
 
-    public ArrayList<String> desconcatenarFiltros(String filters){
-
-        ArrayList<String> filtros = new ArrayList<>();
-        String filtro = "";
-
-        for (int i = 0; i < filters.length(); i++) {
-            if(!(filters.charAt(i) == ',')){
-                filtro.concat(Character.toString(filters.charAt(i)));
-            } else{
-                filtros.add(filtro);
-                filtro = "";
-            }
-        }
-        return filtros;
-
-    }
 
     //Store
     private Image imagenDisponible(Artist artista,  ArrayList<String> listaFiltros, Integer maxPrice){
@@ -221,7 +241,7 @@ public class BayArtController {
             }
         }
 
-        return new Image(null,null,null,null,null,null,null,null,null,null);
+        return new Image(null,null,null,null,null,null,null,null,null);
 
     }
 
@@ -235,9 +255,9 @@ public class BayArtController {
 
         Map<String, Object> infoResponse = new HashMap<>();
 
-        Map<String, String> parametros = new HashMap<>();
+        Map<String, String> parametros   = new HashMap<>();
 
-        ArrayList<String> listaFiltros = desconcatenarFiltros(filters);
+        ArrayList<String>   listaFiltros = desconcatenarFiltros(filters);
 
         //conseguir los bookmarks del usuario
         if(index == 1){
@@ -282,7 +302,7 @@ public class BayArtController {
             }
         }
 
-        infoResponse.put("imageListStore",asociarImagenArtista(listaImages));
+        infoResponse.put("imageListStore",asociarArtista(listaImages));
 
         return new ResponseEntity<>(infoResponse,HttpStatus.OK);
 
@@ -324,12 +344,11 @@ public class BayArtController {
             }
         }
 
-        infoResponse.put("imageListBrowse",asociarImagenArtista(listaImages));
+        infoResponse.put("imageListBrowse",asociarArtista(listaImages));
 
         return new ResponseEntity<>(infoResponse,HttpStatus.OK);
 
     }
-
 
     //Individual Image
     @RequestMapping(path = "/individualImage/{idImage}", method = RequestMethod.GET)
@@ -353,6 +372,7 @@ public class BayArtController {
         return new ResponseEntity<>(infoResponse,HttpStatus.OK);
     }
 
+    //Individual Image Buy/Bookmarks
     @RequestMapping(path = "/individualImage/{idImage} {idUser} action = {action}", method = RequestMethod.POST)
     public ResponseEntity<Object> addBookmark_BuyImage(@PathVariable String idImage,
                                                        @PathVariable String idUser,
@@ -360,13 +380,12 @@ public class BayArtController {
 
         Map<String, Object> infoResponse = new HashMap<>();
 
-        accesoABase.addImage(idUser,idImage,action);
+        accesoABase.addImageToUser(idUser,idImage,action);
 
         return new ResponseEntity<>(infoResponse,HttpStatus.OK);
     }
 
     //Arist Profile
-
     @RequestMapping(path = "/artistProfile/{idUser}", method = RequestMethod.GET)
     public ResponseEntity<Object> getArtistProfile(@PathVariable String idUser){
 
@@ -386,39 +405,53 @@ public class BayArtController {
     }
 
     //Busqueda
-
-    @RequestMapping(path="/seach/{idUser} {word} filters = {filters} viewAs = {userType}",method=RequestMethod.GET)
+    @RequestMapping(path="/seach/{idUser} {word} filters = {filters} user = {user} image = {image} viewAs = {userType}",method=RequestMethod.GET)
     public ResponseEntity<Object>getSearchResults(@PathVariable String idUser,
                                                   @PathVariable String word,
                                                   @PathVariable String filters,
+                                                  @PathVariable Boolean user,
+                                                  @PathVariable Boolean image,
                                                   @PathVariable User userType){
 
-        Map<String,Object> infoResponse  = new HashMap<>();
         ArrayList<Image>   resultImages  = new ArrayList<>();
+        ArrayList<Artist>  resultArtist  = new ArrayList<>();
+        Map<String,Object> infoResponse  = new HashMap<>();
         Map<String,String> requirements  = new HashMap<>();
                            requirements.put("idUser",idUser);
 
         accesoABase.obtenerUsuarios(requirements).get(0).getHistory().add(word);
 
-        requirements.clear();
-        requirements.put("word",word);
+        if(image){
+            requirements.clear();
+            requirements.put("word",word);
 
-        accesoABase.conectarAColeccion("Images");
+            accesoABase.conectarAColeccion("Images");
 
-        if(!filters.isEmpty()) {
-            requirements.put("tags", filters);
+            if(!filters.isEmpty()) {
+                requirements.put("tags", filters);
+            }
+
+            resultImages = accesoABase.obtenerImagenes(requirements);
+
+            infoResponse.put("images",asociarArtista(resultImages));
         }
 
-        resultImages = accesoABase.obtenerImagenes(requirements);
+        if(user){
+            requirements.clear();
+            requirements.put("username",word);
 
-        infoResponse.put("images",resultImages);
+            accesoABase.conectarAColeccion("User");
+
+            resultArtist = accesoABase.obtenerArtistas(requirements);
+
+            infoResponse.put("artist",asociarImages(resultArtist));
+        }
 
         if(resultImages.isEmpty()){
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
-
 
     //Library
     @RequestMapping(path="/library/{idUser} viewAs = {userType} index = {index}",method=RequestMethod.GET)
@@ -449,12 +482,12 @@ public class BayArtController {
             } i++;
         }
 
-        infoResponse.put("library", asociarImagenArtista(library));
+        infoResponse.put("library", asociarArtista(library));
 
         return new ResponseEntity<>(infoResponse,HttpStatus.OK);
     }
 
-    //Settings
+    //Settings POST
     @RequestMapping(path="/setting/{idUser} viewAs = {userType} field = {field} change = {change}",method=RequestMethod.POST)
     public ResponseEntity<Object> modifySettings(@PathVariable String idUser,
                                                  @PathVariable String userType,
@@ -476,6 +509,7 @@ public class BayArtController {
         return  new ResponseEntity<>(infoResponse,HttpStatus.OK);
     }
 
+    //Settings GET
     @RequestMapping(path="/setting/{idUser} viewAs = {userType} field = {field}",method=RequestMethod.GET)
     public ResponseEntity<Object> showInfoSettings(@PathVariable String idUser,
                                                    @PathVariable String userType,
@@ -550,5 +584,20 @@ public class BayArtController {
     }
 
     //Upload Image
+    @RequestMapping(path="/upload-image/{idUser} title = {title} URL = {URL} description = {description} tags = {tags} price = {price}",method=RequestMethod.POST)
+    public ResponseEntity<Object> uploadImage(@PathVariable String  idUser,
+                                              @PathVariable String  title,
+                                              @PathVariable String  URL,
+                                              @PathVariable String  description,
+                                              @PathVariable String  tags,
+                                              @PathVariable Integer price) throws IOException {
+        Map<String,Object> infoResponse = new HashMap<>();
+
+        accesoABase.guardarImagenEnMongoDB(URL,title, idUser, price, description, desconcatenarFiltros(tags));
+
+
+        return  new ResponseEntity<>(infoResponse,HttpStatus.OK);
+
+    }
 
 }
