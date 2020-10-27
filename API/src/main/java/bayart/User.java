@@ -1,8 +1,6 @@
 package bayart;
-import java.util.HashMap;
 import java.util.Date;
 import java.util.ArrayList;
-import java.util.Map;
 
 
 public class User {
@@ -21,13 +19,13 @@ public class User {
     private Boolean notificationsSubEnding;
     private Boolean notificationsBuyAlert;
     private Boolean notificationsInformSponsor;
-    private Map<Integer, Date> subscriptions;
+    private ArrayList<ArrayList<Object>> subscriptions;
     private ArrayList<Sponsor> sponsors;
     private ArrayList<Integer> bookmarks;
     private ArrayList<String> history;
-    private Map<Integer,Map<Date,Boolean>> purchased;
+    private ArrayList<ArrayList<Object>> purchased;
 
-    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, Map<Integer, Date> subscriptions, ArrayList<Sponsor> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, Map<Integer,Map<Date,Boolean>> purchased) {
+    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, ArrayList<ArrayList<Object>> subscriptions, ArrayList<Sponsor> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, ArrayList<ArrayList<Object>> purchased) {
         this.idUser = idUser;
         this.username = username;
         this.eMail = eMail;
@@ -66,11 +64,11 @@ public class User {
         this.notificationsSubEnding = true;
         this.notificationsBuyAlert = true;
         this.notificationsInformSponsor = true;
-        this.subscriptions = new HashMap<>();
+        this.subscriptions = new ArrayList<>();
         this.sponsors = new ArrayList<>();
         this.bookmarks = new ArrayList<>();
         this.history = new ArrayList<>();
-        this.purchased = new HashMap<>();
+        this.purchased = new ArrayList<>();
     }
 
     public Integer getIdUser() {
@@ -193,14 +191,6 @@ public class User {
         this.notificationsInformSponsor = notificationsInformSponsor;
     }
 
-    public Map<Integer, Date> getSubscriptions() {
-        return subscriptions;
-    }
-
-    public void setSubscriptions(Map<Integer, Date> subscriptions) {
-        this.subscriptions = subscriptions;
-    }
-
     public ArrayList<Sponsor> getSponsors() {
         return sponsors;
     }
@@ -225,13 +215,19 @@ public class User {
         this.history = history;
     }
 
-    public Map<Integer,Map<Date,Boolean>> getPurchased() {
+    public ArrayList<ArrayList<Object>> getSubscriptions() {
+        return subscriptions;
+    }
+
+    public void setSubscriptions(ArrayList<ArrayList<Object>> subscriptions) {
+        this.subscriptions = subscriptions;
+    }
+
+    public ArrayList<ArrayList<Object>> getPurchased() {
         return purchased;
     }
 
-    public void setPurchased(Map<Integer,Map<Date,Boolean>> purchased) {
+    public void setPurchased(ArrayList<ArrayList<Object>> purchased) {
         this.purchased = purchased;
     }
 }
-
-

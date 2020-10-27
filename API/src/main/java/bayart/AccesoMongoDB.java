@@ -87,7 +87,7 @@ public class AccesoMongoDB {
 
     public ArrayList<User> obtenerUsuarios(Map<String, String> valoresRequeridos) {
 
-        conectarAColeccion("Users");
+        conectarAColeccion("users");
 
         //almacena los requisitos en la lista de bson
         List<Bson> filtros = new ArrayList<>();
@@ -98,7 +98,6 @@ public class AccesoMongoDB {
             filtros.add(equivalencia);
         }
 
-
         //Forma un Archivo BSON con los filtros anteriormente formados
         Bson requisitosACumplir = and(filtros);
 
@@ -108,7 +107,6 @@ public class AccesoMongoDB {
         //Crea un cursor con el cual recorrer los resultados
         MongoCursor iterador = resultados.iterator();
 
-
         //Va recorriendo las diferentes tuplas obtenidas en "resultados"
         //creando objetos de tipo "User" y agregandolos al array "foundUsers"
         while (iterador.hasNext()) {
@@ -116,7 +114,7 @@ public class AccesoMongoDB {
 
             Integer idUser = document.getInteger("idUser");
             String userName = document.getString("username");
-            String eMail = document.getString("eMail");
+            String eMail = document.getString("email");
             String password = document.getString("password");
             Date birthDate = document.getDate("birthdate");
             Date inscriptionDate = document.getDate("inscriptionDate");
@@ -129,11 +127,11 @@ public class AccesoMongoDB {
             Boolean notificationsSubEnding = document.getBoolean("notificationsSubEnding");
             Boolean notificationsBuyAlert = document.getBoolean("notificationsBuyAlert");
             Boolean notificationsInformSponsor = document.getBoolean("notificationsInformSponsor");
-            HashMap<Integer, Date> subscriptions = (HashMap<Integer, Date>) document.get("subscriptions");
+            ArrayList<ArrayList<Object>> subscriptions = (ArrayList<ArrayList<Object>>) document.get("subscriptions");
             ArrayList<Sponsor> sponsors = (ArrayList<Sponsor>) document.get("sponsors");
             ArrayList<Integer> bookmarks = (ArrayList<Integer>) document.get("bookmarks");
             ArrayList<String> history = (ArrayList<String>) document.get("history");
-            Map<Integer, Map<Date, Boolean>> purchased = (Map<Integer, Map<Date, Boolean>>) document.get("purchased");
+            ArrayList<ArrayList<Object>> purchased = (ArrayList<ArrayList<Object>>) document.get("purchased");
 
             User usuario = new User(idUser, userName, eMail, password, birthDate, inscriptionDate,
                     bpoints, profilePicture, historyStore, theme,
@@ -147,7 +145,7 @@ public class AccesoMongoDB {
 
     public ArrayList<Artist> obtenerArtistas(Map<String, String> valoresRequeridos) {
 
-        conectarAColeccion("Artists");
+        conectarAColeccion("artists");
 
         //Almacena los requisitos en la lista de bson
         ArrayList<Artist> foundArtists = new ArrayList<>();
@@ -247,8 +245,7 @@ public class AccesoMongoDB {
             String description = document.getString("description");
             String url = document.getString("url");
             ArrayList<String> tags = (ArrayList<String>) document.get("tags");
-            HashMap<Integer, HashMap<Date, String>> comments = (HashMap<Integer, HashMap<Date, String>>) document.get("coments");
-
+            ArrayList<ArrayList<Object>> comments = (ArrayList<ArrayList<Object>>) document.get("coments");
 
             Image image = new Image(idImage, idImageFile, idUser, name, price, postDate, description,tags,comments);
             resultImages.add(image);
@@ -307,15 +304,15 @@ public class AccesoMongoDB {
 
     }
 
-    public void insertarUsuario(String username, String eMail, String password, Date inscriptionDate, String type) {
+    public void insertarUsuario(String username, String email, String password, Date inscriptionDate, String type) {
 
-        conectarAColeccion("Users");
+        conectarAColeccion("users");
 
         Document nuevoDocumento = new Document();
         nuevoDocumento.append("idUser", null);
         nuevoDocumento.append("username", username);
         nuevoDocumento.append("password", password);
-        nuevoDocumento.append("email", eMail);
+        nuevoDocumento.append("email", email);
         nuevoDocumento.append("inscriptionDate", inscriptionDate);
         nuevoDocumento.append("birthDate", new Date());
         nuevoDocumento.append("bpoints", 1000);
@@ -326,28 +323,31 @@ public class AccesoMongoDB {
         nuevoDocumento.append("notificationsSubEnding", true);
         nuevoDocumento.append("notificationsBuyAlert", true);
         nuevoDocumento.append("notificationsInformSponsor", true);
-        nuevoDocumento.append("subscriptions", new HashMap<>());
-        nuevoDocumento.append("sponsors", new HashMap<>());
+        nuevoDocumento.append("subscriptions", new ArrayList<>());
+        nuevoDocumento.append("sponsors", new ArrayList<>());
         nuevoDocumento.append("bookmarks", new ArrayList<>());
         nuevoDocumento.append("history", new ArrayList<>());
-        nuevoDocumento.append("purchased", new HashMap<>());
+        nuevoDocumento.append("purchased", new ArrayList<>());
 
         coleccion.insertOne(nuevoDocumento);
 
-        if (type == "artist") {
-            conectarAColeccion("Artists");
+        if (type.equals("artist")) {
+
+            conectarAColeccion("artists");
 
             HashMap<String, String> parametrosUsuario = new HashMap<>();
-            parametrosUsuario.put("eMail", eMail);
+            parametrosUsuario.put("email", email);
             Integer idUser = obtenerUsuarios(parametrosUsuario).get(0).getIdUser();
 
             Document nuevoDocumentoArtista = new Document();
 
             nuevoDocumentoArtista.append("idUser", idUser);
+            nuevoDocumentoArtista.append("imageList", new ArrayList<>());
             nuevoDocumentoArtista.append("notificationsNewSub", true);
             nuevoDocumentoArtista.append("notificationsSell", true);
             nuevoDocumentoArtista.append("notificationsSponsor", true);
-            nuevoDocumentoArtista.append("imageList", new HashMap<>());
+
+            System.out.println(nuevoDocumentoArtista);
 
             coleccion.insertOne(nuevoDocumentoArtista);
         }
@@ -355,7 +355,7 @@ public class AccesoMongoDB {
     }//en el php el archivo tiene que crear un .json con todos los datos
 
     public void addImageToUser(String idUser, String idImage, String action) {
-        conectarAColeccion("Users");
+        conectarAColeccion("users");
 
         Map<String, String> parametros = new HashMap<>();
                             parametros.put("idUser",idUser);
@@ -379,7 +379,7 @@ public class AccesoMongoDB {
     }
 
     public void changeStringParameters(String idUser, String field, String change){
-        conectarAColeccion("Users");
+        conectarAColeccion("users");
 
         Map<String, String> parametros = new HashMap<>();
         parametros.put("idUser",idUser);
@@ -418,7 +418,7 @@ public class AccesoMongoDB {
         gfsFile.setFilename(nombreObjetoFile);
         gfsFile.save();
 
-        conectarAColeccion("Images");
+        conectarAColeccion("images");
 
         Document nuevoDocumento = new Document();
         nuevoDocumento.append("idImage", null);
@@ -436,7 +436,6 @@ public class AccesoMongoDB {
 
     public void obtenerImagenEnMongoDB(String rutaDondeGuardarImagen, String nombreObjetoFile) {
         try {
-
             GridFS gfsPhoto = new GridFS(db,"imageFile");
             GridFSDBFile imageForOutput = gfsPhoto.findOne(nombreObjetoFile);
             File imagen = new File(rutaDondeGuardarImagen);

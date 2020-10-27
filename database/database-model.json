@@ -72,7 +72,7 @@ db.image.insert(){
 }
 
 db.imageFile.insert(){
-	"idImage": 1,
+	"idImage": 0,
     "filename" : "nombre",
     "aliases" : null,
     "chunkSize" : NumberLong(261120),

@@ -1,6 +1,4 @@
 package bayart;
-import java.util.HashMap;
-import java.util.Date;
 import java.util.ArrayList;
 
 public class Artist extends User{

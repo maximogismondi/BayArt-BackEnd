@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.*;
 
-
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequestMapping("/api")
 @RestController
 
@@ -105,7 +105,7 @@ public class BayArtController {
     }
 
     //Login
-    @RequestMapping(path = "/logIn/{username} {password}", method = RequestMethod.GET)
+    @RequestMapping(path = "/logIn/{username}/{password}", method = RequestMethod.GET)
     public ResponseEntity<Object> confirmLogInData(@PathVariable String username,
                                                    @PathVariable String password) {
 
@@ -126,7 +126,7 @@ public class BayArtController {
     }
 
     //Register
-    @RequestMapping(path = "/register/{username} {eMail} {password} {day} {month} {year} {type}", method = RequestMethod.POST)
+    @RequestMapping(path = "/register/{username}/{eMail}/{password}/{day}/{month}/{year}/{type}", method = RequestMethod.POST)
     public ResponseEntity<Object> confirmRegisterData(@PathVariable String username,
                                                       @PathVariable String eMail,
                                                       @PathVariable String password,
@@ -137,30 +137,30 @@ public class BayArtController {
 
         Map<String, Object> infoResponse = new HashMap<>();
 
-        HashMap<String,String> parametrosUsuario = new HashMap<>();
+        HashMap<String,String> parametros = new HashMap<>();
 
-        parametrosUsuario.put("username",username);
-        if(accesoABase.obtenerUsuarios(parametrosUsuario) == null){
+        parametros.put("username",username);
+
+        if(accesoABase.obtenerUsuarios(parametros).size() != 0){
             infoResponse.put("username", "Was an error with the username");
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
 
-        parametrosUsuario.clear();
-        parametrosUsuario.put("eMail",eMail);
-        if(accesoABase.obtenerUsuarios(parametrosUsuario) == null){
-            infoResponse.put("username", "Was an error with the e-mail");
+        parametros.clear();
+        parametros.put("email",eMail);
+        if(accesoABase.obtenerUsuarios(parametros).size() != 0){
+            infoResponse.put("email", "Was an error with the e-mail");
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
 
-
-        parametrosUsuario.put("username",username);
+        parametros.put("username",username);
 
         Date fechaIncriptions = new Date(Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(day));
 
         accesoABase.insertarUsuario(username, eMail, password, fechaIncriptions, type);
 
         HashMap eMailUsuario = new HashMap<>();
-        eMailUsuario.put("eMail",eMail);
+        eMailUsuario.put("email",eMail);
 
         User user = (User) accesoABase.obtenerUsuarios(eMailUsuario).get(0);
 
@@ -182,27 +182,23 @@ public class BayArtController {
             requisitos.put("idUser",Integer.toString(idUser));
 
             User actualUser = accesoABase.obtenerUsuarios(requisitos).get(0);
-            List<Map<Integer,Date>>subscriptions  = (List<Map<Integer, Date>>) actualUser.getSubscriptions();
+            ArrayList<ArrayList<Object>> subscriptions  = actualUser.getSubscriptions();
 
             if(subscriptions.isEmpty()){
                 return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
             }
             else{
-                for(Map<Integer,Date>map : subscriptions){  //recorre cada dato de la subscripción
-                    for(Map.Entry<Integer, Date> entry : map.entrySet()){
+                for(ArrayList<Object> subscription : subscriptions){  //recorre cada dato de la subscripción
+                    HashMap<String,String> datos = new HashMap<>(); //guarda los datos del artista para pasarlos por parámetro
+                    datos.put("idUser",Integer.toString((Integer) subscription.get(0)));
 
-                        HashMap<String,String> datos = new HashMap<>(); //guarda los datos del artista para pasarlos por parámetro
-                        datos.put("idUser",Integer.toString(entry.getKey()));
+                    Artist artista = accesoABase.obtenerArtistas(datos).get(0);
+                    ArrayList<Image> imagesArtist = artista.getImageList(); //obtiene los datos de cada imagen del artista en cuestión
 
-                        Artist artista = (Artist) accesoABase.obtenerArtistas(datos).get(0);
-                        ArrayList<Image> imagesArtist = artista.getImageList(); //obtiene los datos de cada imagen del artista en cuestión
+                    for(Image dato : imagesArtist){ //recorre para sacar únicamente la imagen
+                        //inserta imagenes de artista en el map
+                        listaImages.add(dato); //la agrega a la variable que va a retornar
 
-                        for(Image dato : imagesArtist){ //recorre para sacar únicamente la imagen
-
-                            //inserta imagenes de artista en el map
-                            listaImages.add(dato); //la agrega a la variable que va a retornar
-
-                        }
                     }
                 }
             }
@@ -372,6 +368,7 @@ public class BayArtController {
         return new ResponseEntity<>(infoResponse,HttpStatus.OK);
     }
 
+
     //Individual Image Buy/Bookmarks
     @RequestMapping(path = "/individualImage/{idImage} {idUser} action = {action}", method = RequestMethod.POST)
     public ResponseEntity<Object> addBookmark_BuyImage(@PathVariable String idImage,
@@ -466,7 +463,7 @@ public class BayArtController {
 
         User usuario = accesoABase.obtenerUsuarios(parametros).get(0);
 
-        Map<Integer,Map<Date,Boolean>> listaImagenesCompradas = usuario.getPurchased();
+        ArrayList<ArrayList<Object>> listaImagenesCompradas = usuario.getPurchased();
 
         parametros.clear();
 
@@ -474,9 +471,9 @@ public class BayArtController {
 
         int i = 0, start = 30 * index-1, lim = 30 * index;
 
-        for(Map.Entry<Integer,Map<Date,Boolean>> imagenComprada : listaImagenesCompradas.entrySet()){
+        for(ArrayList<Object> imagenComprada : listaImagenesCompradas){
             if(i >= start && i < lim){
-                parametros.put("idImage",Integer.toString(imagenComprada.getKey()));
+                parametros.put("idImage",Integer.toString((Integer) imagenComprada.get(0)));
                 Image imagen = accesoABase.obtenerImagenes(parametros).get(0);
                 library.add(imagen);
             } i++;
@@ -525,9 +522,9 @@ public class BayArtController {
         if(field.equals("Subscriptions")){
             ArrayList<String> resultado = new ArrayList<>();
 
-            for (Map.Entry<Integer,Date> subscripcion : usuario.getSubscriptions().entrySet()){
+            for (ArrayList<Object> subscripcion : usuario.getSubscriptions()){
                 parametros.clear();
-                parametros.put("idUser",Integer.toString(subscripcion.getKey()));
+                parametros.put("idUser",Integer.toString((Integer) subscripcion.get(0)));
                 resultado.add(accesoABase.obtenerArtistas(parametros).get(0).getUsername());
             }
         } else {
@@ -535,14 +532,13 @@ public class BayArtController {
             parametros.clear();
             parametros.put("idUser",idUser);
 
-            Map<Integer,Map<Date,Boolean>> purchasedImagesMap = accesoABase.obtenerUsuarios(parametros).get(0).getPurchased();
+            ArrayList<ArrayList<Object>> purchasedImagesMap = accesoABase.obtenerUsuarios(parametros).get(0).getPurchased();
 
             Map<String,Integer> purchasedImages = new HashMap<>();
 
-            for(Map.Entry<Integer,Map<Date,Boolean>> imagenAux : purchasedImagesMap.entrySet()){
-
+            for(ArrayList<Object> imagenAux : purchasedImagesMap){
                 parametros.clear();
-                parametros.put("idImage",Integer.toString(imagenAux.getKey()));
+                parametros.put("idImage",Integer.toString((Integer) imagenAux.get(0)));
                 purchasedImages.put(accesoABase.obtenerImagenes(parametros).get(0).getName(), accesoABase.obtenerImagenes(parametros).get(0).getPrice());
             }
 
@@ -562,13 +558,13 @@ public class BayArtController {
             parametros.clear();
             parametros.put("idUser",idUser);
 
-            Map<Integer, Date> subscriptionsMap = accesoABase.obtenerUsuarios(parametros).get(0).getSubscriptions();
+            ArrayList<ArrayList<Object>> subscriptionsMap = accesoABase.obtenerUsuarios(parametros).get(0).getSubscriptions();
 
             Map<String,Integer> subscriptions = new HashMap<>();
 
-            for(Map.Entry<Integer,Date> subAux : subscriptionsMap.entrySet()){
+            for(ArrayList<Object> subAux : subscriptionsMap){
                 parametros.clear();
-                parametros.put("idUser",Integer.toString(subAux.getKey()));
+                parametros.put("idUser",Integer.toString((Integer) subAux.get(0)));
                 subscriptions.put(accesoABase.obtenerArtistas(parametros).get(0).getUsername(),100);
             }
 

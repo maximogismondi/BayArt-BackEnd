@@ -14,9 +14,9 @@ public class Image{
 	private Date    postDate;
 	private String  description;
 	private ArrayList<String> tags;
-	private HashMap<Integer,HashMap<Date,String>> comments;
+	private ArrayList<ArrayList<Object>> comments;
 
-    public Image(Integer idImage,Integer idImageFile, Integer idUser, String name, Integer price, Date postDate, String description, ArrayList<String> tags, HashMap<Integer, HashMap<Date, String>> comments) {
+    public Image(Integer idImage,Integer idImageFile, Integer idUser, String name, Integer price, Date postDate, String description, ArrayList<String> tags, ArrayList<ArrayList<Object>> comments) {
         this.idImage 	 = idImage;
         this.idImageFile = idImageFile;
         this.idUser      = idUser;
@@ -60,10 +60,6 @@ public class Image{
         return tags;
     }
 
-    public HashMap<Integer, HashMap<Date, String>> getComments() {
-        return comments;
-    }
-
     public void setIdImage(Integer idImage) {
         this.idImage = idImage;
     }
@@ -96,7 +92,11 @@ public class Image{
         this.tags = tags;
     }
 
-    public void setComments(HashMap<Integer, HashMap<Date, String>> comments) {
+    public ArrayList<ArrayList<Object>> getComments() {
+        return comments;
+    }
+
+    public void setComments(ArrayList<ArrayList<Object>> comments) {
         this.comments = comments;
     }
 }
