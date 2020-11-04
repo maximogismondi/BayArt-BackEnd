@@ -35,7 +35,6 @@ db.users.insert()
 	"purchased-image": [{
 		"idImage":2,
 		"raspberryDisplay":true,
-		"purchaseDate": "2020/10/18"
 	}],
 	"history": [{
 		"searchText": "picasso"

@@ -6,35 +6,33 @@ import java.util.ArrayList;
 public class User {
     private Integer idUser;
     private String username;
-    private String eMail;
+    private String email;
     private String password;
     private Date birthDate;
     private Date inscriptionDate;
     private Integer bpoints;
     private String profilePicture;
-    private Boolean historyStore;
     private Boolean theme;
     private String language;
     private Boolean notificationsNewPublication;
     private Boolean notificationsSubEnding;
     private Boolean notificationsBuyAlert;
     private Boolean notificationsInformSponsor;
-    private ArrayList<ArrayList<Object>> subscriptions;
-    private ArrayList<Sponsor> sponsors;
+    private ArrayList<Integer> subscriptions;
+    private ArrayList<ArrayList<Integer>> sponsors;
     private ArrayList<Integer> bookmarks;
-    private ArrayList<String> history;
-    private ArrayList<ArrayList<Object>> purchased;
+    private ArrayList<Integer> purchased;
+    private ArrayList<Integer> dailyRewards;
 
-    public User(Integer idUser, String username, String eMail, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean historyStore, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, ArrayList<ArrayList<Object>> subscriptions, ArrayList<Sponsor> sponsors, ArrayList<Integer> bookmarks, ArrayList<String> history, ArrayList<ArrayList<Object>> purchased) {
+    public User(Integer idUser, String username, String email, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, ArrayList<Integer> subscriptions, ArrayList<ArrayList<Integer>> sponsors, ArrayList<Integer> bookmarks, ArrayList<Integer> purchased, ArrayList<Integer> dailyRewards) {
         this.idUser = idUser;
         this.username = username;
-        this.eMail = eMail;
+        this.email = email;
         this.password = password;
         this.birthDate = birthDate;
         this.inscriptionDate = inscriptionDate;
         this.bpoints = bpoints;
         this.profilePicture = profilePicture;
-        this.historyStore = historyStore;
         this.theme = theme;
         this.language = language;
         this.notificationsNewPublication = notificationsNewPublication;
@@ -44,31 +42,8 @@ public class User {
         this.subscriptions = subscriptions;
         this.sponsors = sponsors;
         this.bookmarks = bookmarks;
-        this.history = history;
         this.purchased = purchased;
-    }
-
-    public User() {
-        this.idUser = 0;
-        this.username = "a";
-        this.eMail = "a@a.a";
-        this.password = "aaaaaaaaa";
-        this.birthDate = new Date();
-        this.inscriptionDate = new Date();
-        this.bpoints = 0;
-        this.profilePicture = "";
-        this.historyStore = true;
-        this.theme = true;
-        this.language = "";
-        this.notificationsNewPublication = true;
-        this.notificationsSubEnding = true;
-        this.notificationsBuyAlert = true;
-        this.notificationsInformSponsor = true;
-        this.subscriptions = new ArrayList<>();
-        this.sponsors = new ArrayList<>();
-        this.bookmarks = new ArrayList<>();
-        this.history = new ArrayList<>();
-        this.purchased = new ArrayList<>();
+        this.dailyRewards = dailyRewards;
     }
 
     public Integer getIdUser() {
@@ -87,12 +62,12 @@ public class User {
         this.username = username;
     }
 
-    public String geteMail() {
-        return eMail;
+    public String getEmail() {
+        return email;
     }
 
-    public void seteMail(String eMail) {
-        this.eMail = eMail;
+    public void setEmail(String eMail) {
+        this.email = eMail;
     }
 
     public String getPassword() {
@@ -133,14 +108,6 @@ public class User {
 
     public void setProfilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
-    }
-
-    public Boolean getHistoryStore() {
-        return historyStore;
-    }
-
-    public void setHistoryStore(Boolean historyStore) {
-        this.historyStore = historyStore;
     }
 
     public Boolean getTheme() {
@@ -191,11 +158,11 @@ public class User {
         this.notificationsInformSponsor = notificationsInformSponsor;
     }
 
-    public ArrayList<Sponsor> getSponsors() {
+    public ArrayList<ArrayList<Integer>> getSponsors() {
         return sponsors;
     }
 
-    public void setSponsors(ArrayList<Sponsor> sponsors) {
+    public void setSponsors(ArrayList<ArrayList<Integer>> sponsors) {
         this.sponsors = sponsors;
     }
 
@@ -207,27 +174,27 @@ public class User {
         this.bookmarks = bookmarks;
     }
 
-    public ArrayList<String> getHistory() {
-        return history;
-    }
-
-    public void setHistory(ArrayList<String> history) {
-        this.history = history;
-    }
-
-    public ArrayList<ArrayList<Object>> getSubscriptions() {
+    public ArrayList<Integer> getSubscriptions() {
         return subscriptions;
     }
 
-    public void setSubscriptions(ArrayList<ArrayList<Object>> subscriptions) {
+    public void setSubscriptions(ArrayList<Integer> subscriptions) {
         this.subscriptions = subscriptions;
     }
 
-    public ArrayList<ArrayList<Object>> getPurchased() {
+    public ArrayList<Integer> getPurchased() {
         return purchased;
     }
 
-    public void setPurchased(ArrayList<ArrayList<Object>> purchased) {
+    public void setPurchased(ArrayList<Integer> purchased) {
         this.purchased = purchased;
+    }
+
+    public ArrayList<Integer> getDailyRewards() {
+        return dailyRewards;
+    }
+
+    public void setDailyRewards(ArrayList<Integer> dailyRewards) {
+        this.dailyRewards = dailyRewards;
     }
 }

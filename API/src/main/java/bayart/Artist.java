@@ -1,26 +1,46 @@
 package bayart;
 import java.util.ArrayList;
 
-public class Artist extends User{
-	private ArrayList<Image> imageList;
+public class Artist{
+
+    private Integer idUser;
+	private ArrayList<Integer> imageList;
+	private String banner;
     private Boolean notificationsNewSub;
     private Boolean notificationsSell;
     private Boolean notificationsSponsor;
 
-    public Artist(ArrayList<Image> imageList, Boolean notificationsNewSub, Boolean notificationsSell, Boolean notificationsSponsor) {
-
+    public Artist(Integer idUser, ArrayList<Integer> imageList, String banner, Boolean notificationsNewSub, Boolean notificationsSell, Boolean notificationsSponsor) {
+        this.idUser = idUser;
         this.imageList = imageList;
+        this.banner = banner;
         this.notificationsNewSub = notificationsNewSub;
         this.notificationsSell = notificationsSell;
         this.notificationsSponsor = notificationsSponsor;
     }
 
-    public ArrayList<Image> getImageList() {
+    public Integer getIdUser() {
+        return idUser;
+    }
+
+    public void setIdUser(Integer idUser) {
+        this.idUser = idUser;
+    }
+
+    public ArrayList<Integer> getImageList() {
         return imageList;
     }
 
-    public void setImageList(ArrayList<Image> imageList) {
+    public void setImageList(ArrayList<Integer> imageList) {
         this.imageList = imageList;
+    }
+
+    public String getBanner() {
+        return banner;
+    }
+
+    public void setBanner(String banner) {
+        banner = banner;
     }
 
     public Boolean getNotificationsNewSub() {
