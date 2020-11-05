@@ -5,15 +5,13 @@ public class Artist{
 
     private Integer idUser;
 	private ArrayList<Integer> imageList;
-	private String banner;
     private Boolean notificationsNewSub;
     private Boolean notificationsSell;
     private Boolean notificationsSponsor;
 
-    public Artist(Integer idUser, ArrayList<Integer> imageList, String banner, Boolean notificationsNewSub, Boolean notificationsSell, Boolean notificationsSponsor) {
+    public Artist(Integer idUser, ArrayList<Integer> imageList, Boolean notificationsNewSub, Boolean notificationsSell, Boolean notificationsSponsor) {
         this.idUser = idUser;
         this.imageList = imageList;
-        this.banner = banner;
         this.notificationsNewSub = notificationsNewSub;
         this.notificationsSell = notificationsSell;
         this.notificationsSponsor = notificationsSponsor;
@@ -33,14 +31,6 @@ public class Artist{
 
     public void setImageList(ArrayList<Integer> imageList) {
         this.imageList = imageList;
-    }
-
-    public String getBanner() {
-        return banner;
-    }
-
-    public void setBanner(String banner) {
-        banner = banner;
     }
 
     public Boolean getNotificationsNewSub() {

@@ -11,11 +11,9 @@ public class User {
     private Date birthDate;
     private Date inscriptionDate;
     private Integer bpoints;
-    private String profilePicture;
     private Boolean theme;
     private String language;
     private Boolean notificationsNewPublication;
-    private Boolean notificationsSubEnding;
     private Boolean notificationsBuyAlert;
     private Boolean notificationsInformSponsor;
     private ArrayList<Integer> subscriptions;
@@ -24,7 +22,7 @@ public class User {
     private ArrayList<Integer> purchased;
     private ArrayList<Integer> dailyRewards;
 
-    public User(Integer idUser, String username, String email, String password, Date birthDate, Date inscriptionDate, Integer bpoints, String profilePicture, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsSubEnding, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, ArrayList<Integer> subscriptions, ArrayList<ArrayList<Integer>> sponsors, ArrayList<Integer> bookmarks, ArrayList<Integer> purchased, ArrayList<Integer> dailyRewards) {
+    public User(Integer idUser, String username, String email, String password, Date birthDate, Date inscriptionDate, Integer bpoints, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, ArrayList<Integer> subscriptions, ArrayList<ArrayList<Integer>> sponsors, ArrayList<Integer> bookmarks, ArrayList<Integer> purchased, ArrayList<Integer> dailyRewards) {
         this.idUser = idUser;
         this.username = username;
         this.email = email;
@@ -32,11 +30,9 @@ public class User {
         this.birthDate = birthDate;
         this.inscriptionDate = inscriptionDate;
         this.bpoints = bpoints;
-        this.profilePicture = profilePicture;
         this.theme = theme;
         this.language = language;
         this.notificationsNewPublication = notificationsNewPublication;
-        this.notificationsSubEnding = notificationsSubEnding;
         this.notificationsBuyAlert = notificationsBuyAlert;
         this.notificationsInformSponsor = notificationsInformSponsor;
         this.subscriptions = subscriptions;
@@ -102,14 +98,6 @@ public class User {
         this.bpoints = bpoints;
     }
 
-    public String getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
-    }
-
     public Boolean getTheme() {
         return theme;
     }
@@ -132,14 +120,6 @@ public class User {
 
     public void setNotificationsNewPublication(Boolean notificationsNewPublication) {
         this.notificationsNewPublication = notificationsNewPublication;
-    }
-
-    public Boolean getNotificationsSubEnding() {
-        return notificationsSubEnding;
-    }
-
-    public void setNotificationsSubEnding(Boolean notificationsSubEnding) {
-        this.notificationsSubEnding = notificationsSubEnding;
     }
 
     public Boolean getNotificationsBuyAlert() {

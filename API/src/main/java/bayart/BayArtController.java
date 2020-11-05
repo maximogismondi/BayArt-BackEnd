@@ -5,8 +5,8 @@ package bayart;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
     import org.springframework.web.bind.annotation.*;
-
     import java.io.IOException;
+    import java.time.LocalDate;
     import java.util.*;
 
 import static java.util.Collections.*;
@@ -37,6 +37,7 @@ public class BayArtController {
 
     //Funciones extra
 
+    //JOYA
     private ArrayList<User> asociarArtistas(ArrayList<Image> imagenes) {
 
         Map<String, String> parametros = new HashMap<>();
@@ -56,22 +57,25 @@ public class BayArtController {
         }
 
         return artistaImagen;
-    } //JOYA
+    }
 
+    //JOYA
     private String obtenerImagenPerfil(Integer idUser) {
         HashMap<String, String> parametros = new HashMap<>();
         parametros.put("idUser", Integer.toString(idUser));
 
-        return accesoABase.obtenerImagenEnMongoDB(accesoABase.obtenerUsuarios(parametros).get(0).getProfilePicture());
-    } //JOYA
+        return accesoABase.obtenerImagenEnMongoDB("imageProfile"+idUser);
+    }
 
+    //JOYA
     private String obtenerImagenBanner(Integer idUser) {
         HashMap<String, String> parametros = new HashMap<>();
         parametros.put("idUser", Integer.toString(idUser));
 
-        return accesoABase.obtenerImagenEnMongoDB(accesoABase.obtenerArtistas(parametros).get(0).getBanner());
-    } //JOYA
+        return accesoABase.obtenerImagenEnMongoDB("imageBanner"+idUser);
+    }
 
+    //JOYA
     public ArrayList<String> desconcatenarFiltros(String filters) {
 
         ArrayList<String> filtros = new ArrayList<>();
@@ -88,7 +92,28 @@ public class BayArtController {
         }
         return filtros;
 
-    } //JOYA
+    }
+
+    //JOYA
+    private Integer daysFromWeekStart(){
+        switch (LocalDate.now().getDayOfWeek().toString()){
+            case "MONDAY":
+                return 0;
+            case "TUESDAY":
+                return 1;
+            case "WEDNESDAY":
+                return 2;
+            case "THURSDAY":
+                return 3;
+            case "FRIDAY":
+                return 4;
+            case "SATURDAY":
+                return 5;
+            case "SUNDAY":
+                return 6;
+        }
+        return 0;
+    }
 
     //Login - JOYA
     @RequestMapping(path = "/logIn/{username}/{password}", method = RequestMethod.GET)
@@ -131,20 +156,19 @@ public class BayArtController {
                                                       @PathVariable String type) throws IOException {
 
         Map<String, Object> infoResponse = new HashMap<>();
-
         HashMap<String, String> parametros = new HashMap<>();
 
         parametros.put("username", username);
 
         if (accesoABase.obtenerUsuarios(parametros).size() != 0) {
-            infoResponse.put("username", "Was an error with the username");
+            infoResponse.put("error", "username");
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
 
         parametros.clear();
         parametros.put("email", email);
         if (accesoABase.obtenerUsuarios(parametros).size() != 0) {
-            infoResponse.put("email", "Was an error with the e-mail");
+            infoResponse.put("error", "email");
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
 
@@ -154,10 +178,10 @@ public class BayArtController {
 
         accesoABase.insertarUsuario(username, email, password, fechaNacimiento, type);
 
-        HashMap eMailUsuario = new HashMap<>();
-        eMailUsuario.put("email", email);
+        parametros.clear();
+        parametros.put("email", email);
 
-        User user = (User) accesoABase.obtenerUsuarios(eMailUsuario).get(0);
+        User user = accesoABase.obtenerUsuarios(parametros).get(0);
 
         infoResponse.put("user", user);
         infoResponse.put("profileImage", obtenerImagenPerfil(user.getIdUser()));
@@ -242,8 +266,8 @@ public class BayArtController {
 
     }
 
-/*
-    //DailyRewards
+
+    //DailyRewards - JOYA
     @RequestMapping(path = "/dailyRewards/{idUser}", method = RequestMethod.GET)
     public ResponseEntity<Object> getImgHomepage_ArtistSubscriptions(@PathVariable Integer idUser) {
 
@@ -253,23 +277,35 @@ public class BayArtController {
         parametros.put("idUser", Integer.toString(idUser));
 
         ArrayList<Integer> dailyRewards = accesoABase.obtenerUsuarios(parametros).get(0).getDailyRewards();
-        Integer bpoints = 0;
+        String weekDay = LocalDate.now().getDayOfWeek().toString();
 
-        Date fechaActual = new Date();
-        String weekDay = Character.toString(("" + fechaActual).charAt(0)) + Character.toString(("" + fechaActual).charAt(1)) + Character.toString(("" + fechaActual).charAt(2));
-
-        switch (weekDay) {
-            case "Mon" :
-                Gianpa, aca me quede sin ideas, si tenes ganas de hacerlo hacelo, sino cuando este me pongo yo (anda todo :) )
-                ya cree el array list en user y en todos los metodo falta en la base
+        if (dailyRewards.size() != 0 && LocalDate.now().minusDays(dailyRewards.size() - 4).equals(LocalDate.of(dailyRewards.get(2), dailyRewards.get(1), dailyRewards.get(0)))){
+            return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
+        }
+        else if (dailyRewards.size() == 0 || weekDay.equals("MONDAY") || LocalDate.now().isAfter(LocalDate.of(dailyRewards.get(2), dailyRewards.get(1), dailyRewards.get(0)).plusDays(7))) {
+            LocalDate weekStartDate = LocalDate.now().minusDays(daysFromWeekStart());
+            dailyRewards.clear();
+            dailyRewards.add(weekStartDate.getDayOfMonth());
+            dailyRewards.add(weekStartDate.getMonthValue());
+            dailyRewards.add(weekStartDate.getYear());
+        }
+        if (weekDay == "SUNDAY" && !dailyRewards.contains(0)) {
+            dailyRewards.add(200);
+            accesoABase.modificarBpoints(idUser, 200);
+        } else {
+            for (int i = dailyRewards.size(); i < 3 + daysFromWeekStart(); i++) {
+                dailyRewards.add(0);
+            }
+            dailyRewards.add(50);
+            accesoABase.modificarBpoints(idUser, 50);
         }
 
-        accesoABase.modificarBpoints(idUser, bpoints);
-        infoResponse.put("bpoints", bpoints);
+        accesoABase.updateDailyRewards(idUser, dailyRewards);
+        infoResponse.put("dailyReward", dailyRewards);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
 
-    }*/
+    }
 
     //Store - JOYA
     @RequestMapping(path = "/store/{idUser}/{index}/{tags}/{maxPrice}", method = RequestMethod.GET)
@@ -796,33 +832,26 @@ public class BayArtController {
     }
 
     //Upload Image - JOYA
-    @RequestMapping(path = "/uploadImage/{idUser}/{title}/{description}/{tags}/{price}", method = RequestMethod.POST)
+    @RequestMapping(path = "/uploadImage/{idUser}/{title}/{tags}/{price}", method = RequestMethod.POST)
     public ResponseEntity<Object> uploadImage(@PathVariable Integer idUser,
                                               @PathVariable String  title,
-                                              @PathVariable String  description,
                                               @PathVariable String  tags,
                                               @PathVariable Integer price,
-                                              @RequestBody  String  encodedImage) throws IOException {
+                                              @RequestBody  HashMap requestBody) throws IOException {
 
         Map<String, Object> infoResponse = new HashMap<>();
-
-        DBObject encodedImageObject = (DBObject) JSON.parse(encodedImage);
 
         HashMap<String, String> parametros = new HashMap<>();
         parametros.put("title", title);
 
         if (accesoABase.obtenerImagenes(parametros).size() != 0) {
-            infoResponse.put("name", "the title of the image already exists");
+            infoResponse.put("error", "title");
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
 
-        if(price == 0){
-            accesoABase.modificarBpoints(idUser, -200);
-        } else {
-            accesoABase.modificarBpoints(idUser, -500);
-        }
+        accesoABase.modificarBpoints(idUser, -500);
 
-        accesoABase.guardarImagen((String) encodedImageObject.get("encodedImage"), title, idUser, price, description, desconcatenarFiltros(tags));
+        accesoABase.guardarImagen((String) requestBody.get("encodedImage"), title, idUser, price,(String) requestBody.get("description"), desconcatenarFiltros(tags));
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
 
     }

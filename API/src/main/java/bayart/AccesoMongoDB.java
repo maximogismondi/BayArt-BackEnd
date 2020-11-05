@@ -138,11 +138,9 @@ public class AccesoMongoDB {
             Date birthDate = document.getDate("birthdate");
             Date inscriptionDate = document.getDate("inscriptionDate");
             Integer bpoints = document.getInteger("bpoints");
-            String encodedProfilePicture = document.getString("profilePicture");
             Boolean theme = document.getBoolean("theme");
             String language = document.getString("language");
             Boolean notificationsNewPublication = document.getBoolean("notificationsNewPublication");
-            Boolean notificationsSubEnding = document.getBoolean("notificationsSubEnding");
             Boolean notificationsBuyAlert = document.getBoolean("notificationsBuyAlert");
             Boolean notificationsInformSponsor = document.getBoolean("notificationsInformSponsor");
             ArrayList<Integer> subscriptions = (ArrayList<Integer>) document.get("subscriptions");
@@ -152,8 +150,8 @@ public class AccesoMongoDB {
             ArrayList<Integer> dailyRewards = (ArrayList<Integer>) document.get("dailyRewards");
 
             User usuario = new User(idUser, userName, eMail, password, birthDate, inscriptionDate,
-                    bpoints, encodedProfilePicture, theme,
-                    language, notificationsNewPublication, notificationsSubEnding,
+                    bpoints, theme,
+                    language, notificationsNewPublication,
                     notificationsBuyAlert, notificationsInformSponsor, subscriptions,
                     sponsors, bookmarks, purchased, dailyRewards);
 
@@ -195,12 +193,11 @@ public class AccesoMongoDB {
 
             Integer idUser               = document.getInteger("idUser");
             ArrayList<Integer> imageList = (ArrayList<Integer>) document.get("imageList");
-            String  encodedBanner        = document.getString("banner");
             Boolean notificationsNewSub  = document.getBoolean("notificationsNewSub");
             Boolean notificationsSell    = document.getBoolean("notificationsSell");
             Boolean notificationsSponsor = document.getBoolean("notificationsSponsor");
 
-            Artist artista = new Artist(idUser, imageList,encodedBanner , notificationsNewSub, notificationsSell, notificationsSponsor);
+            Artist artista = new Artist(idUser, imageList , notificationsNewSub, notificationsSell, notificationsSponsor);
 
             foundArtists.add(artista);
         }
@@ -358,11 +355,7 @@ public class AccesoMongoDB {
         nuevoDocumento.append("inscriptionDate", new Date());
         nuevoDocumento.append("birthDate", birthDate);
         nuevoDocumento.append("bpoints", 200);
-        nuevoDocumento.append("profilePicture", "imageProfile"+idUser);
-        nuevoDocumento.append("theme", true);
-        nuevoDocumento.append("language", "es");
         nuevoDocumento.append("notificationsNewPublication", true);
-        nuevoDocumento.append("notificationsSubEnding", true);
         nuevoDocumento.append("notificationsBuyAlert", true);
         nuevoDocumento.append("notificationsInformSponsor", true);
         nuevoDocumento.append("subscriptions", new ArrayList<>());
@@ -383,7 +376,6 @@ public class AccesoMongoDB {
 
             nuevoDocumentoArtista.append("idUser", idUser);
             nuevoDocumentoArtista.append("imageList", new ArrayList<>());
-            nuevoDocumentoArtista.append("banner", "imageBanner"+idUser);
             nuevoDocumentoArtista.append("notificationsNewSub", true);
             nuevoDocumentoArtista.append("notificationsSell", true);
             nuevoDocumentoArtista.append("notificationsSponsor", true);
@@ -423,20 +415,13 @@ public class AccesoMongoDB {
     public void cambiarUsername_Email_Password(String idUser, String field, String change){
         conectarAColeccion("users");
 
-        Map<String, String> parametros = new HashMap<>();
-        parametros.put("idUser",idUser);
-
-        List<Bson> filtros = new ArrayList<>();
-
-        filtros.add(Filters.eq("idUser", Integer.parseInt(idUser)));
-
-        Bson requisitosACumplir = and(filtros);
+        Bson filter = Filters.eq("idUser", Integer.parseInt(idUser));
 
         String json = "{ $set: { " + field + ":'" + change + "'}}";
 
         DBObject push = (DBObject) JSON.parse(json);
 
-        coleccion.updateOne(requisitosACumplir, (Bson)push);
+        coleccion.updateOne(filter, (Bson)push);
     }
 
     //JOYA
@@ -491,7 +476,9 @@ public class AccesoMongoDB {
         nuevoDocumento.append("price",price);
         nuevoDocumento.append("postDate",new Date());
         nuevoDocumento.append("description",description);
-        nuevoDocumento.append("tags",tags);
+        if (!tags.get(0).equals("null")) {
+            nuevoDocumento.append("tags",tags);
+        }
 
         coleccion.insertOne(nuevoDocumento);
 
@@ -580,4 +567,18 @@ public class AccesoMongoDB {
         conectarAColeccion("users");
         coleccion.updateOne(equivalencia, (Bson)push);
     }
+
+    //JOYA
+    public void updateDailyRewards (Integer idUser, ArrayList<Integer> dailyRewards){
+        conectarAColeccion("users");
+
+        Bson filter = Filters.eq("idUser", idUser);
+
+        String json = "{ $set: { dailyRewards:" + dailyRewards + "}}";
+
+        DBObject push = (DBObject) JSON.parse(json);
+
+        coleccion.updateOne(filter, (Bson)push);
+    }
+
 }
