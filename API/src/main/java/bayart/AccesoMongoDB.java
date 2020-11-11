@@ -1,24 +1,25 @@
 package bayart;
-    import com.fasterxml.jackson.core.JsonProcessingException;
-    import com.mongodb.DB;
-    import com.mongodb.DBObject;
-    import com.mongodb.MongoClient;
-    import com.mongodb.client.*;
-    import com.mongodb.client.model.Filters;
-    import com.mongodb.gridfs.GridFS;
-    import com.mongodb.gridfs.GridFSDBFile;
-    import com.mongodb.gridfs.GridFSInputFile;
-    import com.mongodb.util.JSON;
-    import org.apache.commons.io.FileUtils;
-    import org.bson.Document;
-    import org.bson.conversions.Bson;
-    import org.bson.types.ObjectId;
-    import org.springframework.stereotype.Service;
 
-    import java.io.IOException;
-    import java.util.*;
-    import java.lang.Exception;
-    import java.io.File;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.mongodb.DB;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.client.*;
+import com.mongodb.client.model.Filters;
+import com.mongodb.gridfs.GridFS;
+import com.mongodb.gridfs.GridFSDBFile;
+import com.mongodb.gridfs.GridFSInputFile;
+import com.mongodb.util.JSON;
+import org.apache.commons.io.FileUtils;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.*;
+import java.lang.Exception;
+import java.io.File;
 
 import static com.mongodb.client.model.Filters.*;
 
@@ -34,7 +35,7 @@ public class AccesoMongoDB {
     public void conectarABaseDeDatos(String nombreBaseDeDatos) {
         try {
             MongoClient mongo = new MongoClient(host, puerto);
-            db = new DB(mongo,"bayart");
+            db = new DB(mongo, "bayart");
             this.baseDeDatos = mongo.getDatabase(nombreBaseDeDatos);
 
         } catch (Exception e) {
@@ -51,22 +52,39 @@ public class AccesoMongoDB {
     }
 
     //JOYA
-    public void conectarAColeccion(String nombreDeColeccion) {
-        this.coleccion = baseDeDatos.getCollection(nombreDeColeccion);
+    public boolean existeLaColeccion(String nombreDeColeccion) {
+        MongoIterable<String> nombreDeColecciones = baseDeDatos.listCollectionNames();
+
+        for (String nombre : nombreDeColecciones) {
+            if (nombre.equals(nombreDeColeccion)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     //JOYA
-    public ArrayList<String> desconcatenarFiltros(String filters){
+    public void conectarAColeccion(String nombreDeColeccion) {
+        if (existeLaColeccion(nombreDeColeccion)) {
+            this.coleccion = baseDeDatos.getCollection(nombreDeColeccion);
+        } else {
+            baseDeDatos.createCollection(nombreDeColeccion);
+            this.coleccion = baseDeDatos.getCollection(nombreDeColeccion);
+        }
+    }
+
+    //JOYA
+    public ArrayList<String> desconcatenarFiltros(String filters) {
 
         ArrayList<String> filtros = new ArrayList<>();
         String filtro = "";
         filters += ",";
 
         for (int i = 0; i < filters.length(); i++) {
-            if(filters.charAt(i) == ','){
+            if (filters.charAt(i) == ',') {
                 filtros.add(filtro);
                 filtro = "";
-            } else{
+            } else {
                 filtro += filters.charAt(i);
             }
         }
@@ -75,10 +93,10 @@ public class AccesoMongoDB {
     }
 
     //JOYA
-    public void modificarBpoints (Integer idUser, Integer bpoints){
+    public void modificarBpoints(Integer idUser, Integer bpoints) {
 
         Map<String, String> parametros = new HashMap<>();
-        parametros.put("idUser",Integer.toString(idUser));
+        parametros.put("idUser", Integer.toString(idUser));
 
         Integer bpointsUsuario = obtenerUsuarios(parametros).get(0).getBpoints() + bpoints;
 
@@ -88,7 +106,7 @@ public class AccesoMongoDB {
         DBObject push = (DBObject) JSON.parse(json);
 
         conectarAColeccion("users");
-        coleccion.updateOne(equivalencia, (Bson)push);
+        coleccion.updateOne(equivalencia, (Bson) push);
     }
 
     //JOYA
@@ -101,11 +119,10 @@ public class AccesoMongoDB {
         ArrayList<User> foundUsers = new ArrayList<>();
 
         for (Map.Entry<String, String> atributo : valoresRequeridos.entrySet()) {
-            if(atributo.getKey().equals("idUser")){
+            if (atributo.getKey().equals("idUser")) {
                 Bson equivalencia = Filters.eq(atributo.getKey(), Integer.parseInt(atributo.getValue()));
                 filtros.add(equivalencia);
-            }
-            else{
+            } else {
                 Bson equivalencia = Filters.eq(atributo.getKey(), atributo.getValue());
                 filtros.add(equivalencia);
             }
@@ -115,10 +132,9 @@ public class AccesoMongoDB {
 
         FindIterable resultados;
 
-        if (filtros.isEmpty()){
+        if (filtros.isEmpty()) {
             resultados = coleccion.find();
-        }
-        else{
+        } else {
             Bson requisitosACumplir = and(filtros);
             resultados = coleccion.find(requisitosACumplir);
         }
@@ -138,8 +154,6 @@ public class AccesoMongoDB {
             Date birthDate = document.getDate("birthdate");
             Date inscriptionDate = document.getDate("inscriptionDate");
             Integer bpoints = document.getInteger("bpoints");
-            Boolean theme = document.getBoolean("theme");
-            String language = document.getString("language");
             Boolean notificationsNewPublication = document.getBoolean("notificationsNewPublication");
             Boolean notificationsBuyAlert = document.getBoolean("notificationsBuyAlert");
             Boolean notificationsInformSponsor = document.getBoolean("notificationsInformSponsor");
@@ -150,8 +164,7 @@ public class AccesoMongoDB {
             ArrayList<Integer> dailyRewards = (ArrayList<Integer>) document.get("dailyRewards");
 
             User usuario = new User(idUser, userName, eMail, password, birthDate, inscriptionDate,
-                    bpoints, theme,
-                    language, notificationsNewPublication,
+                    bpoints, notificationsNewPublication,
                     notificationsBuyAlert, notificationsInformSponsor, subscriptions,
                     sponsors, bookmarks, purchased, dailyRewards);
 
@@ -176,10 +189,9 @@ public class AccesoMongoDB {
         conectarAColeccion("artists");
         FindIterable resultados;
 
-        if (filtros.isEmpty()){
+        if (filtros.isEmpty()) {
             resultados = coleccion.find();
-        }
-        else{
+        } else {
             Bson requisitosACumplir = and(filtros);
             resultados = coleccion.find(requisitosACumplir);
         }
@@ -191,13 +203,13 @@ public class AccesoMongoDB {
 
             Document document = (Document) iterador.next();
 
-            Integer idUser               = document.getInteger("idUser");
+            Integer idUser = document.getInteger("idUser");
             ArrayList<Integer> imageList = (ArrayList<Integer>) document.get("imageList");
-            Boolean notificationsNewSub  = document.getBoolean("notificationsNewSub");
-            Boolean notificationsSell    = document.getBoolean("notificationsSell");
+            Boolean notificationsNewSub = document.getBoolean("notificationsNewSub");
+            Boolean notificationsSell = document.getBoolean("notificationsSell");
             Boolean notificationsSponsor = document.getBoolean("notificationsSponsor");
 
-            Artist artista = new Artist(idUser, imageList , notificationsNewSub, notificationsSell, notificationsSponsor);
+            Artist artista = new Artist(idUser, imageList, notificationsNewSub, notificationsSell, notificationsSponsor);
 
             foundArtists.add(artista);
         }
@@ -207,32 +219,26 @@ public class AccesoMongoDB {
     }
 
     //JOYA
-    public ArrayList<Image> obtenerImagenes(Map<String, String> requiredValue){
+    public ArrayList<Image> obtenerImagenes(Map<String, String> requiredValue) {
 
-        ArrayList<Image>   resultImages = new ArrayList<>();//lista de imágenes que va a retornar
-        Map<String,Object> requirements = new HashMap<>();
+        ArrayList<Image> resultImages = new ArrayList<>();//lista de imágenes que va a retornar
+        Map<String, Object> requirements = new HashMap<>();
 
-        for(Map.Entry<String,String>valor:requiredValue.entrySet()){
-            if(valor.getKey().equals("word")){//si existe un filtro por palabra
-                requirements.put("word",valor.getValue());//para buscar por nombre y descripción
-            }
-            else if(valor.getKey().equals("tags")){//si existe un filtro por tag
+        for (Map.Entry<String, String> valor : requiredValue.entrySet()) {
+            if (valor.getKey().equals("word")) {//si existe un filtro por palabra
+                requirements.put("word", valor.getValue());//para buscar por nombre y descripción
+            } else if (valor.getKey().equals("tags")) {//si existe un filtro por tag
                 requirements.put(valor.getKey(), desconcatenarFiltros(valor.getValue()));
-            }
-            else if(valor.getKey().equals("idImage")){//para buscar por idImage
-                requirements.put(valor.getKey(),Integer.parseInt(valor.getValue()));
-            }
-            else if(valor.getKey().equals("maxPrice")){//si existe un filtro por maxPrice
-                requirements.put(valor.getKey(),valor.getValue());
-            }
-            else if(valor.getKey().equals("salable")){//si existe un filtro por maxPrice
+            } else if (valor.getKey().equals("idImage")) {//para buscar por idImage
+                requirements.put(valor.getKey(), Integer.parseInt(valor.getValue()));
+            } else if (valor.getKey().equals("maxPrice")) {//si existe un filtro por maxPrice
+                requirements.put(valor.getKey(), valor.getValue());
+            } else if (valor.getKey().equals("salable")) {//si existe un filtro por maxPrice
                 requirements.put(valor.getKey(), Boolean.parseBoolean(valor.getValue()));
-            }
-            else if(valor.getKey().equals("title")){
-                requirements.put(valor.getKey(),valor.getValue());
-            }
-            else if(valor.getKey().equals("idUser")){
-                requirements.put(valor.getKey(),Integer.parseInt(valor.getValue()));
+            } else if (valor.getKey().equals("title")) {
+                requirements.put(valor.getKey(), valor.getValue());
+            } else if (valor.getKey().equals("idUser")) {
+                requirements.put(valor.getKey(), Integer.parseInt(valor.getValue()));
             }
         }
 
@@ -241,17 +247,15 @@ public class AccesoMongoDB {
         Bson filtro = null;
         FindIterable resultados = coleccion.find();
 
-        for (Map.Entry<String,Object> atributo : requirements.entrySet()) {
-            if(atributo.getKey().equals("idImage")){
-                filtro = Filters.eq("idImage",atributo.getValue());
+        for (Map.Entry<String, Object> atributo : requirements.entrySet()) {
+            if (atributo.getKey().equals("idImage")) {
+                filtro = Filters.eq("idImage", atributo.getValue());
                 resultados = coleccion.find(filtro);
-            }
-            else if(atributo.getKey().equals("title")){
-                filtro = Filters.eq("name",atributo.getValue());
+            } else if (atributo.getKey().equals("title")) {
+                filtro = Filters.eq("name", atributo.getValue());
                 resultados = coleccion.find(filtro);
-            }
-            else if(atributo.getKey().equals("idUser")){
-                filtro = Filters.eq("idUser",atributo.getValue());
+            } else if (atributo.getKey().equals("idUser")) {
+                filtro = Filters.eq("idUser", atributo.getValue());
                 resultados = coleccion.find(filtro);
             }
         }
@@ -259,35 +263,36 @@ public class AccesoMongoDB {
         //Crea un cursor con el cual recorrer los resultados
         MongoCursor iterador = resultados.iterator();
 
-        while(iterador.hasNext()) {
+        while (iterador.hasNext()) {
 
             Document document = (Document) iterador.next();
 
-            Integer idImage        = document.getInteger("idImage");
-            Integer idUser         = document.getInteger("idUser");
-            String name            = document.getString("name");
-            Integer price          = document.getInteger("price");
-            Date postDate          = document.getDate("postDate");
-            String description     = document.getString("description");
+            Integer idImage = document.getInteger("idImage");
+            Integer idUser = document.getInteger("idUser");
+            String name = document.getString("name");
+            Integer price = document.getInteger("price");
+            Date postDate = document.getDate("postDate");
+            String description = document.getString("description");
             ArrayList<String> tags = (ArrayList<String>) document.get("tags");
 
-            Image image = new Image(idImage, idUser, name, price, postDate, description,tags);
+            Image image = new Image(idImage, idUser, name, price, postDate, description, tags);
             resultImages.add(image);
         }
 
         ArrayList<Image> imagesRemove = new ArrayList<>();
 
-        for(Map.Entry<String,Object> parametro : requirements.entrySet()){
-            switch(parametro.getKey()){
+        for (Map.Entry<String, Object> parametro : requirements.entrySet()) {
+            switch (parametro.getKey()) {
                 case "tags":
                     ArrayList<String> tags = (ArrayList<String>) parametro.getValue();
-
-                    for(Image image : resultImages){
+                    for (Image image : resultImages) {
                         Boolean contieneTag = false;
-                        for(String tag : tags){
-                            contieneTag = true;
+                        for (String tag : tags) {
+                            if (image.getTags() != null && image.getTags().contains(tag)) {
+                                contieneTag = true;
+                            }
                         }
-                        if(!contieneTag){
+                        if (!contieneTag) {
                             imagesRemove.add(image);
                         }
                     }
@@ -303,7 +308,7 @@ public class AccesoMongoDB {
                     break;
 
                 case "word":
-                    for(Image image : resultImages) {
+                    for (Image image : resultImages) {
                         if (!image.getName().contains((String) parametro.getValue()) && !image.getDescription().contains((String) parametro.getValue())) {
                             imagesRemove.add(image);
                         }
@@ -331,7 +336,7 @@ public class AccesoMongoDB {
             }
         }
 
-        for (Image image : imagesRemove){
+        for (Image image : imagesRemove) {
             resultImages.remove(image);
         }
 
@@ -345,7 +350,7 @@ public class AccesoMongoDB {
         Integer idUser = 1 + (int) coleccion.count();
 
         guardarImagenMongo("iVBORw0KGgoAAAANSUhEUgAAAfUAAAH5CAYAAACYiqdqAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAZ1SURBVHja7NVBEQAwCMCwMYHYQBoyQQd3iYR+GpU9DwA470sAAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAgKkDgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDgKkDAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAgKkDgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gBg6hIAgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDgKkDAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAgKkDgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AGDqAGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gCAqQOAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCYOgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDAKYOAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAYOoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQMApg4Apg4AmDoAYOoAgKkDgKkDAKYOAJg6AGDqAICpA4CpAwCmDgCYOgBg6gBg6gCAqQMApg4AmDoAmDoAYOoAgKkDAKYOAJg6AJg6AGDqAICpAwCmDgCmDgCYOgBg6gCAqQOAqQMAxy0AAAD//wMA1xwGTRUGyiIAAAAASUVORK5CYII="
-        , "imageProfile"+idUser);
+                , "imageProfile" + idUser);
 
         Document nuevoDocumento = new Document();
         nuevoDocumento.append("idUser", idUser);
@@ -354,7 +359,7 @@ public class AccesoMongoDB {
         nuevoDocumento.append("email", email);
         nuevoDocumento.append("inscriptionDate", new Date());
         nuevoDocumento.append("birthDate", birthDate);
-        nuevoDocumento.append("bpoints", 200);
+        nuevoDocumento.append("bpoints", 500);
         nuevoDocumento.append("notificationsNewPublication", true);
         nuevoDocumento.append("notificationsBuyAlert", true);
         nuevoDocumento.append("notificationsInformSponsor", true);
@@ -367,10 +372,10 @@ public class AccesoMongoDB {
         conectarAColeccion("users");
         coleccion.insertOne(nuevoDocumento);
 
-        if (type.equals("artist")){
+        if (type.equals("artist")) {
 
             guardarImagenMongo("iVBORw0KGgoAAAANSUhEUgAACWkAAALpCAYAAADL4DZOAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAACJWSURBVHja7NoxAQAgDMCwgf8fCcgEFf0SCb275p43AAAAAAAAAAAAJLYEAAAAAAAAAAAAHZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhExaAAAAAAAAAAAAIZMWAAAAAAAAAABAyKQFAAAAAAAAAAAQMmkBAAAAAAAAAACETFoAAAAAAAAAAAAhkxYAAAAAAAAAAEDIpAUAAAAAAAAAABAyaQEAAAAAAAAAAIRMWgAAAAAAAAAAACGTFgAAAAAAAAAAQMikBQAAAAAAAAAAEDJpAQAAAAAAAAAAhD4AAAD//wMAcGkIDzT1KjoAAAAASUVORK5CYII="
-                    ,"imageBanner"+idUser);
+                    , "imageBanner" + idUser);
 
             Document nuevoDocumentoArtista = new Document();
 
@@ -390,29 +395,30 @@ public class AccesoMongoDB {
         conectarAColeccion("users");
 
         Map<String, String> parametros = new HashMap<>();
-                            parametros.put("idUser",idUser);
+        parametros.put("idUser", idUser);
 
         Bson equivalencia = Filters.eq("idUser", Integer.parseInt(idUser));
 
         String json = null;
 
-        if (action.equals("removeBookmark")){
+        if (action.equals("removeBookmark")) {
             json = "{ $pull: { bookmarks: { $in: [" + idImage + "]  }}}";
-        }
-        else if (action.equals("addBookmark")){
+        } else if (action.equals("addBookmark")) {
             json = "{ $push: { bookmarks:" + idImage + "}}";
-        }
-        else if (action.equals("buy")){
+        } else if (action.equals("buy")) {
+            if (obtenerUsuarios(parametros).get(0).getBookmarks().contains(Integer.parseInt(idImage))) {
+                addImageToUser(idUser, idImage, "removeBookmark");
+            }
             json = "{ $push: { purchased:" + idImage + "}}";
         }
 
         DBObject push = (DBObject) JSON.parse(json);
 
-        coleccion.updateOne(equivalencia, (Bson)push);
+        coleccion.updateOne(equivalencia, (Bson) push);
     }
 
     //JOYA
-    public void cambiarUsername_Email_Password(String idUser, String field, String change){
+    public void cambiarUsername_Email_Password(String idUser, String field, String change) {
         conectarAColeccion("users");
 
         Bson filter = Filters.eq("idUser", Integer.parseInt(idUser));
@@ -421,11 +427,11 @@ public class AccesoMongoDB {
 
         DBObject push = (DBObject) JSON.parse(json);
 
-        coleccion.updateOne(filter, (Bson)push);
+        coleccion.updateOne(filter, (Bson) push);
     }
 
     //JOYA
-    public void borrarImagenMongo(String nombreObjetoFile){
+    public void borrarImagenMongo(String nombreObjetoFile) {
         conectarAColeccion("images.files");
 
         Bson filter = Filters.eq("filename", nombreObjetoFile);
@@ -441,7 +447,7 @@ public class AccesoMongoDB {
 
         conectarAColeccion("images.chunks");
 
-        filter = Filters.eq("files_id",new ObjectId(idImagen));
+        filter = Filters.eq("files_id", new ObjectId(idImagen));
 
         coleccion.deleteMany(filter);
     }
@@ -449,10 +455,10 @@ public class AccesoMongoDB {
     //JOYA
     public void guardarImagenMongo(String encodedString, String nombreObjetoFile) throws IOException {
         byte[] decodedBytes = Base64.getDecoder().decode(encodedString);
-        FileUtils.writeByteArrayToFile(new File("src/main/resources/tempImages/"+nombreObjetoFile),decodedBytes);
+        FileUtils.writeByteArrayToFile(new File("src/main/resources/tempImages/" + nombreObjetoFile), decodedBytes);
 
-        File imagen = new File("src/main/resources/tempImages/"+nombreObjetoFile);
-        GridFS gfsPhoto = new GridFS(db,"images");
+        File imagen = new File("src/main/resources/tempImages/" + nombreObjetoFile);
+        GridFS gfsPhoto = new GridFS(db, "images");
         GridFSInputFile gfsFile = gfsPhoto.createFile(imagen);
         gfsFile.setFilename(nombreObjetoFile);
         gfsFile.save();
@@ -461,9 +467,9 @@ public class AccesoMongoDB {
     }
 
     //JOYA
-    public void guardarImagen(String encodedString, String nombreObjetoFile, Integer idUser, Integer price, String description, ArrayList<String>tags) throws IOException {
+    public void guardarImagen(String encodedString, String nombreObjetoFile, Integer idUser, Integer price, String description, ArrayList<String> tags) throws IOException {
 
-        guardarImagenMongo(encodedString,nombreObjetoFile);
+        guardarImagenMongo(encodedString, nombreObjetoFile);
 
         conectarAColeccion("images");
         Integer idImage = 1 + (int) coleccion.count();
@@ -471,13 +477,13 @@ public class AccesoMongoDB {
         Document nuevoDocumento = new Document();
 
         nuevoDocumento.append("idImage", idImage);
-        nuevoDocumento.append("idUser",idUser);
-        nuevoDocumento.append("name",nombreObjetoFile);
-        nuevoDocumento.append("price",price);
-        nuevoDocumento.append("postDate",new Date());
-        nuevoDocumento.append("description",description);
+        nuevoDocumento.append("idUser", idUser);
+        nuevoDocumento.append("name", nombreObjetoFile);
+        nuevoDocumento.append("price", price);
+        nuevoDocumento.append("postDate", new Date());
+        nuevoDocumento.append("description", description);
         if (!tags.get(0).equals("null")) {
-            nuevoDocumento.append("tags",tags);
+            nuevoDocumento.append("tags", tags);
         }
 
         coleccion.insertOne(nuevoDocumento);
@@ -485,16 +491,16 @@ public class AccesoMongoDB {
         conectarAColeccion("artists");
         Bson equivalenciaAId = Filters.eq("idUser", idUser);
 
-        String json = "{ $push: {imageList: "+idImage+"}}";
+        String json = "{ $push: {imageList: " + idImage + "}}";
         DBObject push = (DBObject) JSON.parse(json);
 
-        coleccion.updateOne(equivalenciaAId, (Bson)push);
+        coleccion.updateOne(equivalenciaAId, (Bson) push);
     }
 
     //JOYA
     public String obtenerImagenEnMongoDB(String nombreObjetoFile) {
         try {
-            GridFS gfsPhoto = new GridFS(db,"images");
+            GridFS gfsPhoto = new GridFS(db, "images");
             GridFSDBFile imageForOutput = gfsPhoto.findOne(nombreObjetoFile);
             File imagen = new File("src/main/resources/tempImages/xd");
             imageForOutput.writeTo(imagen);
@@ -515,61 +521,61 @@ public class AccesoMongoDB {
     }
 
     //JOYA
-    public void addSub(Integer idUser, Integer idArtist){
+    public void addSub(Integer idUser, Integer idArtist) {
 
         conectarAColeccion("users");
 
         Bson equivalencia = eq("idUser", idUser);
 
-        String json = "{ $push : { subscriptions : "+idArtist+" } }";
+        String json = "{ $push : { subscriptions : " + idArtist + " } }";
 
         DBObject push = (DBObject) JSON.parse(json);
 
-        coleccion.updateOne(equivalencia, (Bson)push);
+        coleccion.updateOne(equivalencia, (Bson) push);
     }
 
     //JOYA
-    public void stopSub(String idUser, Integer idArtist){
+    public void stopSub(String idUser, Integer idArtist) {
 
         Bson equivalencia = Filters.eq("idUser", Integer.parseInt(idUser));
 
-        String json = "{ $pull: { subscriptions: { $in: ["+idArtist+"] }}}";
+        String json = "{ $pull: { subscriptions: { $in: [" + idArtist + "] }}}";
 
         DBObject push = (DBObject) JSON.parse(json);
 
         conectarAColeccion("users");
-        coleccion.updateOne(equivalencia, (Bson)push);
+        coleccion.updateOne(equivalencia, (Bson) push);
     }
 
     //JOYA
-    public void addSponsor(String idUser, String idArtist, Integer percentage){
+    public void addSponsor(String idUser, String idArtist, Integer percentage) {
 
         conectarAColeccion("users");
 
         Bson equivalencia = eq("idUser", Integer.parseInt(idUser));
 
-        String json = "{ $push : { sponsors : ["+Integer.parseInt(idArtist)+","+percentage+"] } }";
+        String json = "{ $push : { sponsors : [" + Integer.parseInt(idArtist) + "," + percentage + "] } }";
 
         DBObject push = (DBObject) JSON.parse(json);
 
-        coleccion.updateOne(equivalencia, (Bson)push);
+        coleccion.updateOne(equivalencia, (Bson) push);
     }
 
     //JOYA
-    public void stopSponsor(String idUser, Integer idArtist){
+    public void stopSponsor(String idUser, Integer idArtist) {
 
         Bson equivalencia = Filters.eq("idUser", Integer.parseInt(idUser));
 
-        String json = "{ $pull: { sponsors: { $in: ["+idArtist+"] }}}";
+        String json = "{ $pull: { sponsors: { $in: [" + idArtist + "] }}}";
 
         DBObject push = (DBObject) JSON.parse(json);
 
         conectarAColeccion("users");
-        coleccion.updateOne(equivalencia, (Bson)push);
+        coleccion.updateOne(equivalencia, (Bson) push);
     }
 
     //JOYA
-    public void updateDailyRewards (Integer idUser, ArrayList<Integer> dailyRewards){
+    public void updateDailyRewards(Integer idUser, ArrayList<Integer> dailyRewards) {
         conectarAColeccion("users");
 
         Bson filter = Filters.eq("idUser", idUser);
@@ -578,7 +584,7 @@ public class AccesoMongoDB {
 
         DBObject push = (DBObject) JSON.parse(json);
 
-        coleccion.updateOne(filter, (Bson)push);
+        coleccion.updateOne(filter, (Bson) push);
     }
 
 }

@@ -1,13 +1,15 @@
 package bayart;
-    import com.mongodb.DBObject;
-    import com.mongodb.util.JSON;
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.http.HttpStatus;
-    import org.springframework.http.ResponseEntity;
-    import org.springframework.web.bind.annotation.*;
-    import java.io.IOException;
-    import java.time.LocalDate;
-    import java.util.*;
+
+import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.*;
 
 import static java.util.Collections.*;
 
@@ -33,7 +35,7 @@ public class BayArtController {
 
     //constante cantidad de imagenes que se devuelven
 
-    static final int cantidad = 5;
+    static final int cantidad = 10;
 
     //Funciones extra
 
@@ -64,7 +66,7 @@ public class BayArtController {
         HashMap<String, String> parametros = new HashMap<>();
         parametros.put("idUser", Integer.toString(idUser));
 
-        return accesoABase.obtenerImagenEnMongoDB("imageProfile"+idUser);
+        return accesoABase.obtenerImagenEnMongoDB("imageProfile" + idUser);
     }
 
     //JOYA
@@ -72,7 +74,7 @@ public class BayArtController {
         HashMap<String, String> parametros = new HashMap<>();
         parametros.put("idUser", Integer.toString(idUser));
 
-        return accesoABase.obtenerImagenEnMongoDB("imageBanner"+idUser);
+        return accesoABase.obtenerImagenEnMongoDB("imageBanner" + idUser);
     }
 
     //JOYA
@@ -95,8 +97,8 @@ public class BayArtController {
     }
 
     //JOYA
-    private Integer daysFromWeekStart(){
-        switch (LocalDate.now().getDayOfWeek().toString()){
+    private Integer daysFromWeekStart() {
+        switch (LocalDate.now().getDayOfWeek().toString()) {
             case "MONDAY":
                 return 0;
             case "TUESDAY":
@@ -131,13 +133,13 @@ public class BayArtController {
         } else {
             User usuario = accesoABase.obtenerUsuarios(parametros).get(0);
             infoResponse.put("user", usuario);
-            infoResponse.put("profileImage", obtenerImagenPerfil(usuario.getIdUser()));
+            infoResponse.put("encodedProfilePicture", obtenerImagenPerfil(usuario.getIdUser()));
 
             parametros.clear();
             parametros.put("idUser", Integer.toString(usuario.getIdUser()));
             if (accesoABase.obtenerArtistas(parametros).size() != 0) {
                 infoResponse.put("artist", accesoABase.obtenerArtistas(parametros).get(0));
-                infoResponse.put("bannerImage", obtenerImagenBanner(usuario.getIdUser()));
+                infoResponse.put("encodedBanner", obtenerImagenBanner(usuario.getIdUser()));
             }
 
             return new ResponseEntity<>(infoResponse, HttpStatus.OK);
@@ -184,13 +186,13 @@ public class BayArtController {
         User user = accesoABase.obtenerUsuarios(parametros).get(0);
 
         infoResponse.put("user", user);
-        infoResponse.put("profileImage", obtenerImagenPerfil(user.getIdUser()));
+        infoResponse.put("encodedProfilePicture", obtenerImagenPerfil(user.getIdUser()));
 
         parametros.clear();
         parametros.put("idUser", Integer.toString(user.getIdUser()));
         if (accesoABase.obtenerArtistas(parametros).size() != 0) {
             infoResponse.put("artist", accesoABase.obtenerArtistas(parametros).get(0));
-            infoResponse.put("bannerImage", obtenerImagenBanner(user.getIdUser()));
+            infoResponse.put("encodedBanner", obtenerImagenBanner(user.getIdUser()));
         }
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
@@ -209,6 +211,9 @@ public class BayArtController {
         User actualUser = accesoABase.obtenerUsuarios(parametros).get(0);
         ArrayList<Integer> subscriptions = actualUser.getSubscriptions();
         ArrayList<User> subcriptionsData = new ArrayList<>();
+        ArrayList<Image> listaImagesIndex = new ArrayList<>();
+        HashMap<Integer, String> listaImagesIndexEncoded = new HashMap<>();
+        HashMap<Integer, String> listaProfileImages = new HashMap<>();
 
         if (index == 1) {
 
@@ -227,19 +232,15 @@ public class BayArtController {
                     }
                 }
             }
-
-            for (Integer subscription : subscriptions) {
-
-                parametros.clear();
-                parametros.put("idUser", (Integer.toString((Integer) subscription)));
-                subcriptionsData.add(accesoABase.obtenerUsuarios(parametros).get(0));
-
-            }
-            infoResponse.put("artistsCarrousel", subcriptionsData);
+            infoResponse.put("maxIndex", Math.ceil(Float.valueOf(listaImages.size()) / Float.valueOf(cantidad)));
         }
 
-        ArrayList<Image> listaImagesIndex = new ArrayList<>();
-        HashMap<Integer, String> listaImagesIndexEncoded = new HashMap<>();
+        for (Integer subscription : subscriptions) {
+            parametros.clear();
+            parametros.put("idUser", (Integer.toString(subscription)));
+            subcriptionsData.add(accesoABase.obtenerUsuarios(parametros).get(0));
+            listaProfileImages.put(accesoABase.obtenerUsuarios(parametros).get(0).getIdUser(), obtenerImagenPerfil(accesoABase.obtenerUsuarios(parametros).get(0).getIdUser()));
+        }
 
         for (int i = cantidad * (index - 1); i < cantidad * index; i++) {
             if (listaImages.size() > i) {
@@ -250,22 +251,13 @@ public class BayArtController {
             }
         }
 
+        infoResponse.put("artists", subcriptionsData);
         infoResponse.put("imagesEncoded", listaImagesIndexEncoded);
         infoResponse.put("images", listaImagesIndex);
-        infoResponse.put("artists", asociarArtistas(listaImagesIndex));
-
-        HashMap<Integer, String> listaProfileImages = new HashMap<>();
-
-        for (User artist : asociarArtistas(listaImagesIndex)) {
-            listaProfileImages.put(artist.getIdUser(), obtenerImagenPerfil(artist.getIdUser()));
-        }
-
         infoResponse.put("profileImages", listaProfileImages);
-
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
 
     }
-
 
     //DailyRewards - JOYA
     @RequestMapping(path = "/dailyRewards/{idUser}", method = RequestMethod.GET)
@@ -279,17 +271,16 @@ public class BayArtController {
         ArrayList<Integer> dailyRewards = accesoABase.obtenerUsuarios(parametros).get(0).getDailyRewards();
         String weekDay = LocalDate.now().getDayOfWeek().toString();
 
-        if (dailyRewards.size() != 0 && LocalDate.now().minusDays(dailyRewards.size() - 4).equals(LocalDate.of(dailyRewards.get(2), dailyRewards.get(1), dailyRewards.get(0)))){
+        if (dailyRewards.size() != 0 && LocalDate.now().minusDays(dailyRewards.size() - 4).equals(LocalDate.of(dailyRewards.get(2), dailyRewards.get(1), dailyRewards.get(0)))) {
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
-        }
-        else if (dailyRewards.size() == 0 || weekDay.equals("MONDAY") || LocalDate.now().isAfter(LocalDate.of(dailyRewards.get(2), dailyRewards.get(1), dailyRewards.get(0)).plusDays(7))) {
+        } else if (dailyRewards.size() == 0 || weekDay.equals("MONDAY") || LocalDate.now().isAfter(LocalDate.of(dailyRewards.get(2), dailyRewards.get(1), dailyRewards.get(0)).plusDays(7))) {
             LocalDate weekStartDate = LocalDate.now().minusDays(daysFromWeekStart());
             dailyRewards.clear();
             dailyRewards.add(weekStartDate.getDayOfMonth());
             dailyRewards.add(weekStartDate.getMonthValue());
             dailyRewards.add(weekStartDate.getYear());
         }
-        if (weekDay == "SUNDAY" && !dailyRewards.contains(0)) {
+        if (weekDay == "SUNDAY" && dailyRewards.size() == 9 && !dailyRewards.contains(0)) {
             dailyRewards.add(200);
             accesoABase.modificarBpoints(idUser, 200);
         } else {
@@ -301,6 +292,9 @@ public class BayArtController {
         }
 
         accesoABase.updateDailyRewards(idUser, dailyRewards);
+        dailyRewards.remove(0);
+        dailyRewards.remove(0);
+        dailyRewards.remove(0);
         infoResponse.put("dailyReward", dailyRewards);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
@@ -415,54 +409,62 @@ public class BayArtController {
     }
 
     //Browse - JOYA
-    @RequestMapping(path = "/browse/{idUser}/{index}/{tags}", method = RequestMethod.GET)
+    @RequestMapping(path = "/browse/{idUser}/{index}/{reset}/{tags}", method = RequestMethod.GET)
     public ResponseEntity<Object> getImgBrowse(@PathVariable String idUser,
                                                @PathVariable Integer index,
-                                               @PathVariable String tags) {
+                                               @PathVariable String tags,
+                                               @PathVariable Boolean reset) {
 
         Map<String, Object> infoResponse = new HashMap<>();
         Map<String, String> parametros = new HashMap<>();
 
-        HashMap<Integer, String> encodedProfileImages = new HashMap<>();
-
-        parametros.put("idUser", idUser);
-
-        if (index == 1) {
-            listaImages.clear();
-        }
-
-        parametros.clear();
-        if (!tags.equals("null")) {
-            parametros.put("tags", tags);
-        }
-        parametros.put("salable", "false");
-
-        ArrayList<Image> bodyImages = accesoABase.obtenerImagenes(parametros);
-
         ArrayList<Image> bodyImagesIndex = new ArrayList<>();
         HashMap<Integer, String> encodedBodyImages = new HashMap<>();
+        HashMap<Integer, String> encodedProfileImages = new HashMap<>();
 
-        int indice = cantidad * (index - 1);
+        if (reset) {
 
-        while (indice < cantidad * index) {
-            if (bodyImages.size() > indice) {
-                Image image = bodyImages.get((int) Math.round(Math.random() * (bodyImages.size() - 1)));
+            parametros.clear();
+            if (!tags.equals("null")) {
+                parametros.put("tags", tags);
+            }
+            parametros.put("salable", "false");
+
+            listaImages.clear();
+
+            ArrayList<Image> databaseImages = accesoABase.obtenerImagenes(parametros);
+
+            while (databaseImages.size() > 0) {
+                int indexDatabaseImage = (int) Math.round(Math.random() * (databaseImages.size() - 1));
+
                 for (int i = 0; i <= listaImages.size(); i++) {
+
                     if (i == listaImages.size()) {
                         parametros.clear();
-                        parametros.put("idUser", Integer.toString(image.getIdUser()));
+                        parametros.put("idUser", Integer.toString(databaseImages.get(indexDatabaseImage).getIdUser()));
+
                         if (Math.random() * 100 <= (Math.log((accesoABase.obtenerUsuarios(parametros).get(0).getBpoints() / 50) + 2) / Math.log(1.1))) {
-                            bodyImagesIndex.add(image);
-                            listaImages.add(image);
-                            encodedBodyImages.put(image.getIdImage(), accesoABase.obtenerImagenEnMongoDB(image.getName()));
-                            indice++;
+                            listaImages.add(databaseImages.get(indexDatabaseImage));
+                            databaseImages.remove(indexDatabaseImage);
                         }
+
                         break;
                     }
-                    if (listaImages.get(i).getIdImage() == image.getIdImage()) {
+
+                    if (listaImages.get(i).getIdImage() == databaseImages.get(indexDatabaseImage).getIdImage()) {
                         break;
                     }
+
                 }
+            }
+
+            infoResponse.put("maxIndex", Math.ceil(Float.valueOf(listaImages.size()) / Float.valueOf(cantidad)));
+        }
+
+        for (int i = cantidad * (index - 1); i < cantidad * index; i++) {
+            if (listaImages.size() > i) {
+                bodyImagesIndex.add(listaImages.get(i));
+                encodedBodyImages.put(listaImages.get(i).getIdImage(), accesoABase.obtenerImagenEnMongoDB(listaImages.get(i).getName()));
             } else {
                 break;
             }
@@ -474,23 +476,23 @@ public class BayArtController {
             encodedProfileImages.put(artistaAux.getIdUser(), obtenerImagenPerfil(artistaAux.getIdUser()));
         }
 
-        infoResponse.put("bodyImagesIndex", bodyImagesIndex);
-        infoResponse.put("encodedBodyImages", encodedBodyImages);
+        infoResponse.put("images", bodyImagesIndex);
+        infoResponse.put("imagesEncoded", encodedBodyImages);
         infoResponse.put("artists", artists);
-        infoResponse.put("encodedProfileImages", encodedProfileImages);
+        infoResponse.put("profileImages", encodedProfileImages);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
 
     //Individual Image - JOYA
-    @RequestMapping(path = "/individualImage/{idUser}/{idImage}", method = RequestMethod.GET)
+    @RequestMapping(path = "/individualImage/{idUser}/{title}", method = RequestMethod.GET)
     public ResponseEntity<Object> getImageInformation(@PathVariable String idUser,
-                                                      @PathVariable String idImage) {
+                                                      @PathVariable String title) {
 
         Map<String, Object> infoResponse = new HashMap<>();
 
         Map<String, String> parametros = new HashMap<>();
-        parametros.put("idImage", idImage);
+        parametros.put("title", title);
 
         Image imagen = accesoABase.obtenerImagenes(parametros).get(0);
         String encodedImage = accesoABase.obtenerImagenEnMongoDB(imagen.getName());
@@ -513,15 +515,17 @@ public class BayArtController {
         infoResponse.put("purchased", false);
         for (Integer compra : user.getPurchased()) {
             if (compra == imagen.getIdImage()) {
-                infoResponse.put("purchased",true);
+                infoResponse.put("purchased", true);
                 break;
             }
         }
+        
+        if (artista.getIdUser() == Integer.parseInt(idUser)) {
+            infoResponse.put("purchased", true);
+        }
 
         infoResponse.put("subscribed", false);
-
         if (user.getSubscriptions().contains(imagen.getIdUser())) {
-            infoResponse.remove("subscribed");
             infoResponse.put("subscribed", true);
         }
 
@@ -535,9 +539,9 @@ public class BayArtController {
 
 
     //Arist Profile - JOYA
-    @RequestMapping(path = "/artistProfile/{idUser}/{idArtist}/{index}", method = RequestMethod.GET)
+    @RequestMapping(path = "/artistProfile/{idUser}/{nameArtist}/{index}", method = RequestMethod.GET)
     public ResponseEntity<Object> getArtistProfile(@PathVariable String idUser,
-                                                   @PathVariable String idArtist,
+                                                   @PathVariable String nameArtist,
                                                    @PathVariable Integer index) {
 
         Map<String, Object> infoResponse = new HashMap<>();
@@ -547,43 +551,49 @@ public class BayArtController {
         User user = accesoABase.obtenerUsuarios(parametros).get(0);
 
         parametros.clear();
-        parametros.put("idUser", idArtist);
+        parametros.put("username", nameArtist);
         User userArtist = accesoABase.obtenerUsuarios(parametros).get(0);
 
         if (index == 1) {
+            parametros.clear();
+            parametros.put("idUser", Integer.toString(userArtist.getIdUser()));
+
             listaArtists.clear();
             listaImages = accesoABase.obtenerImagenes(parametros);
             reverse(listaImages);
-
             parametros.clear();
-            ArrayList<User> usuarios = accesoABase.obtenerUsuarios(parametros);
-            int subscribers = 0;
-            for (User usuarioAux : usuarios) {
-                if (usuarioAux.getSubscriptions().contains(Integer.parseInt(idArtist))) {
-                    subscribers++;
-                }
-            }
-            infoResponse.put("subscribers", subscribers);
 
-            infoResponse.put("sponsor", null);
-            for(ArrayList<Integer> sponsor : user.getSponsors()){
-                if (sponsor.get(0) == Integer.parseInt(idArtist)){
-                    parametros.clear();
-                    parametros.put("idUser", Integer.toString(sponsor.get(0)));
-                    infoResponse.put("sponsor", accesoABase.obtenerUsuarios(parametros).get(0).getBpoints() * sponsor.get(1) / 10000);
-                    break;
-                }
-            }
+            infoResponse.put("maxIndex", Math.ceil(Float.valueOf(listaImages.size()) / Float.valueOf(cantidad)));
+        }
 
-            infoResponse.put("encodedProfilePicture", obtenerImagenPerfil(userArtist.getIdUser()));
-            infoResponse.put("encodedBanner", obtenerImagenBanner(userArtist.getIdUser()));
-            infoResponse.put("artist", userArtist);
-            infoResponse.put("subscribed", false);
-            for (Integer subscrption : user.getSubscriptions()) {
-                if (subscrption == userArtist.getIdUser()) {
-                    infoResponse.put("subscribed", true);
-                    break;
-                }
+        ArrayList<User> usuarios = accesoABase.obtenerUsuarios(parametros);
+        int subscribers = 0;
+        for (User usuarioAux : usuarios) {
+            if (usuarioAux.getSubscriptions().contains(userArtist.getIdUser())) {
+                subscribers++;
+            }
+        }
+        infoResponse.put("subscribers", subscribers);
+
+        infoResponse.put("sponsor", 0);
+        for (ArrayList<Integer> sponsor : user.getSponsors()) {
+            if (sponsor.get(0) == userArtist.getIdUser()) {
+                parametros.clear();
+                parametros.put("idUser", Integer.toString(sponsor.get(0)));
+                infoResponse.put("sponsor", sponsor.get(1));
+                break;
+            }
+        }
+
+        infoResponse.put("encodedProfilePicture", obtenerImagenPerfil(userArtist.getIdUser()));
+        infoResponse.put("encodedBanner", obtenerImagenBanner(userArtist.getIdUser()));
+        infoResponse.put("artist", userArtist);
+
+        infoResponse.put("subscribed", false);
+        for (Integer subscrption : user.getSubscriptions()) {
+            if (subscrption == userArtist.getIdUser()) {
+                infoResponse.put("subscribed", true);
+                break;
             }
         }
 
@@ -602,7 +612,6 @@ public class BayArtController {
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
-
 
     //Busqueda - JOYA
     @RequestMapping(path = "/search/{idUser}/{word}/{index}/{tags}/{filterImage}/{filterArtists}", method = RequestMethod.GET)
@@ -712,58 +721,66 @@ public class BayArtController {
         parametros.put("idUser", idUser);
         User usuario = accesoABase.obtenerUsuarios(parametros).get(0);
 
-        ArrayList<Image> images = new ArrayList<>();
-        HashMap<Integer, String> encondedImages = new HashMap<>();
+        if (index == 1) {
+            listaImages.clear();
 
-        for (int i = cantidad * (index - 1); i < cantidad * index; i++) {
-            if (i < usuario.getPurchased().size()) {
+            for (Integer id : usuario.getPurchased()) {
                 parametros.clear();
-                parametros.put("idImage", Integer.toString(usuario.getPurchased().get(i)));
-                Image imagen = accesoABase.obtenerImagenes(parametros).get(0);
-                images.add(imagen);
-                encondedImages.put(imagen.getIdImage(), accesoABase.obtenerImagenEnMongoDB(imagen.getName()));
+                parametros.put("idImage", Integer.toString(id));
+                listaImages.add(accesoABase.obtenerImagenes(parametros).get(0));
             }
+
+            infoResponse.put("maxIndex", Math.ceil(Float.valueOf(listaImages.size()) / Float.valueOf(cantidad)));
         }
 
-        ArrayList<User> artists = asociarArtistas(images);
+        HashMap<Integer, String> encondedImages = new HashMap<>();
+        ArrayList<Image> imagesIndex = new ArrayList<>();
 
-        infoResponse.put("images", images);
-        infoResponse.put("encodedImages", encondedImages);
-        infoResponse.put("artists", artists);
+        for (int i = cantidad * (index - 1); i < cantidad * index; i++) {
+            if (i < listaImages.size()) {
+                imagesIndex.add(listaImages.get(i));
+                encondedImages.put(listaImages.get(i).getIdImage(), accesoABase.obtenerImagenEnMongoDB(listaImages.get(i).getName()));
+            }
+        }
+        reverse(imagesIndex);
 
+        ArrayList<User> artists = asociarArtistas(imagesIndex);
         HashMap<Integer, String> encodedProfilePictures = new HashMap<>();
 
         for (User artist : artists) {
             encodedProfilePictures.put(artist.getIdUser(), obtenerImagenPerfil(artist.getIdUser()));
         }
 
+        infoResponse.put("images", imagesIndex);
+        infoResponse.put("encodedImages", encondedImages);
+        infoResponse.put("artists", artists);
         infoResponse.put("encodedProfilePicture", encodedProfilePictures);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
 
     //Settings POST - JOYA
-    @RequestMapping(path="/settings/{idUser}/{field}",method=RequestMethod.POST)
+    @RequestMapping(path = "/settings/{idUser}/{field}", method = RequestMethod.POST)
     public ResponseEntity<Object> modifySettings(@PathVariable String idUser,
                                                  @PathVariable String field,
-                                                 @RequestBody  String change) throws IOException {
+                                                 @RequestBody String change) throws IOException {
 
-        Map<String,Object> infoResponse = new HashMap<>();
+        Map<String, Object> infoResponse = new HashMap<>();
 
         Map<String, String> parametros = new HashMap<>();
 
         DBObject DBchange = (DBObject) JSON.parse(change);
 
-        if(field.equals("username") || field.equals("email") || field.equals("password")){
-            if(!field.equals("password")){
+        if (field.equals("username") || field.equals("email") || field.equals("password")) {
+            if (!field.equals("password")) {
 
-                parametros.put(field,(String) DBchange.get(field));
+                parametros.put(field, (String) DBchange.get(field));
 
-                if(accesoABase.obtenerUsuarios(parametros).size() != 0){
-                    return new ResponseEntity<>(infoResponse,HttpStatus.CONFLICT);
+                if (accesoABase.obtenerUsuarios(parametros).size() != 0) {
+                    return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
                 }
 
-                if(field.equals("username")){
+                if (field.equals("username")) {
                     accesoABase.modificarBpoints(Integer.parseInt(idUser), -200);
                 }
             }
@@ -772,11 +789,10 @@ public class BayArtController {
 
             String nombre = "";
 
-            if (field.equals("banner")){
-                nombre = "imageBanner"+idUser;
-            }
-            else{
-                nombre = "imageProfile"+idUser;
+            if (field.equals("banner")) {
+                nombre = "imageBanner" + idUser;
+            } else {
+                nombre = "imageProfile" + idUser;
             }
 
             accesoABase.borrarImagenMongo(nombre);
@@ -784,60 +800,60 @@ public class BayArtController {
             accesoABase.modificarBpoints(Integer.parseInt(idUser), -500);
         }
 
-        return  new ResponseEntity<>(infoResponse,HttpStatus.OK);
+        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
 
     //Settings GET - JOYA
-    @RequestMapping(path="/settings/{idUser}",method=RequestMethod.GET)
-    public ResponseEntity<Object> showInfoSettings(@PathVariable String idUser){
+    @RequestMapping(path = "/settings/{idUser}", method = RequestMethod.GET)
+    public ResponseEntity<Object> showInfoSettings(@PathVariable String idUser) {
 
 
-        HashMap<String,String> parametros = new HashMap<>();
-        HashMap<String,Object> infoResponse = new HashMap<>();
+        HashMap<String, String> parametros = new HashMap<>();
+        HashMap<String, Object> infoResponse = new HashMap<>();
 
         parametros.put("idUser", idUser);
 
         User user = accesoABase.obtenerUsuarios(parametros).get(0);
 
-        ArrayList<User>  artists = new ArrayList<>();
-        ArrayList<Image> images  = new ArrayList<>();
-        ArrayList<User> sponsorsArtists  = new ArrayList<>();
+        ArrayList<User> artists = new ArrayList<>();
+        ArrayList<Image> images = new ArrayList<>();
+        ArrayList<User> sponsorsArtists = new ArrayList<>();
         ArrayList<Float> sponsorsPercentage = new ArrayList<>();
 
-        for (Integer idSub : user.getSubscriptions()){
+        for (Integer idSub : user.getSubscriptions()) {
             parametros.clear();
             parametros.put("idUser", Integer.toString(idSub));
             artists.add(accesoABase.obtenerUsuarios(parametros).get(0));
         }
 
-        for (Integer idImage : user.getPurchased()){
+        for (Integer idImage : user.getPurchased()) {
             parametros.clear();
             parametros.put("idImage", Integer.toString(idImage));
             images.add(accesoABase.obtenerImagenes(parametros).get(0));
         }
 
-        for(ArrayList<Integer> sponsor : user.getSponsors()){
+        for (ArrayList<Integer> sponsor : user.getSponsors()) {
             parametros.clear();
             parametros.put("idUser", Integer.toString(sponsor.get(0)));
             sponsorsArtists.add(accesoABase.obtenerUsuarios(parametros).get(0));
             sponsorsPercentage.add(Float.valueOf(sponsor.get(1)) / 100);
         }
 
-        infoResponse.put("subscriptions",artists);
-        infoResponse.put("purchasedImages",images);
-        infoResponse.put("sponsorsArtists",sponsorsArtists);
-        infoResponse.put("sponsorsPercentage",sponsorsPercentage);
+        infoResponse.put("subscriptions", artists);
+        infoResponse.put("purchasedImages", images);
+        infoResponse.put("sponsorsArtists", sponsorsArtists);
+        infoResponse.put("sponsorsPercentage", sponsorsPercentage);
 
-        return  new ResponseEntity<>(infoResponse,HttpStatus.OK);
+        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
 
     //Upload Image - JOYA
     @RequestMapping(path = "/uploadImage/{idUser}/{title}/{tags}/{price}", method = RequestMethod.POST)
     public ResponseEntity<Object> uploadImage(@PathVariable Integer idUser,
-                                              @PathVariable String  title,
-                                              @PathVariable String  tags,
+                                              @PathVariable String title,
+                                              @PathVariable String tags,
                                               @PathVariable Integer price,
-                                              @RequestBody  HashMap requestBody) throws IOException {
+                                              @RequestBody HashMap requestBody) throws IOException {
 
         Map<String, Object> infoResponse = new HashMap<>();
 
@@ -851,7 +867,7 @@ public class BayArtController {
 
         accesoABase.modificarBpoints(idUser, -500);
 
-        accesoABase.guardarImagen((String) requestBody.get("encodedImage"), title, idUser, price,(String) requestBody.get("description"), desconcatenarFiltros(tags));
+        accesoABase.guardarImagen((String) requestBody.get("encodedImage"), title, idUser, price, (String) requestBody.get("description"), desconcatenarFiltros(tags));
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
 
     }
@@ -873,19 +889,19 @@ public class BayArtController {
             Integer idArtist = accesoABase.obtenerImagenes(parametros).get(0).getIdUser();
 
             parametros.clear();
-            parametros.put("idUser",idUser);
+            parametros.put("idUser", idUser);
 
-            if(accesoABase.obtenerUsuarios(parametros).get(0).getSubscriptions().contains(idArtist)){
+            if (accesoABase.obtenerUsuarios(parametros).get(0).getSubscriptions().contains(idArtist)) {
                 parametros.clear();
                 parametros.put("idImage", idImage);
-
-                accesoABase.modificarBpoints(Integer.parseInt(idUser), -(Integer.parseInt(Double.toString(accesoABase.obtenerImagenes(parametros).get(0).getPrice() * 0.8))));
+                accesoABase.modificarBpoints(Integer.parseInt(idUser), (int) -(accesoABase.obtenerImagenes(parametros).get(0).getPrice() * 0.8));
+                accesoABase.modificarBpoints(idArtist, (int) (accesoABase.obtenerImagenes(parametros).get(0).getPrice() * 0.8));
 
             } else {
                 parametros.clear();
                 parametros.put("idImage", idImage);
-
-                accesoABase.modificarBpoints(Integer.parseInt(idUser), accesoABase.obtenerImagenes(parametros).get(0).getPrice());
+                accesoABase.modificarBpoints(Integer.parseInt(idUser), -accesoABase.obtenerImagenes(parametros).get(0).getPrice());
+                accesoABase.modificarBpoints(idArtist, accesoABase.obtenerImagenes(parametros).get(0).getPrice());
             }
         }
 
@@ -933,8 +949,6 @@ public class BayArtController {
 
         Integer percentage = (bpoints * 10000) / (artist.getBpoints() + bpoints);
 
-        System.out.println();
-
         accesoABase.modificarBpoints(Integer.parseInt(idUser), -bpoints);
         accesoABase.modificarBpoints(Integer.parseInt(idArtist), bpoints);
 
@@ -953,19 +967,20 @@ public class BayArtController {
         HashMap<String, String> parametros = new HashMap<>();
         parametros.put("idUser", idUser);
 
-        Integer profit    = 0;
+        Integer percentage = 0;
         ArrayList<ArrayList<Integer>> sponsors = accesoABase.obtenerUsuarios(parametros).get(0).getSponsors();
 
-        for(ArrayList<Integer> sponsor : sponsors){
+        for (ArrayList<Integer> sponsor : sponsors) {
 
-            if ( sponsor.get(0) == Integer.parseInt(idArtist)) {
+            if (sponsor.get(0) == Integer.parseInt(idArtist)) {
                 parametros.clear();
                 parametros.put("idUser", idArtist);
-                profit    = accesoABase.obtenerUsuarios(parametros).get(0).getBpoints() * sponsor.get(1) / 10000;
+                percentage = sponsor.get(1);
+                infoResponse.put("profit", percentage);
 
                 //Linea legendaria
 
-                    //profit    = Integer.parseInt(Double.toString(Double.parseDouble(Integer.toString(accesoABase.obtenerUsuarios(parametros).get(0).getBpoints())) * (Double) sponsor.get(1) / 100));
+                //profit    = Integer.parseInt(Double.toString(Double.parseDouble(Integer.toString(accesoABase.obtenerUsuarios(parametros).get(0).getBpoints())) * (Double) sponsor.get(1) / 100));
 
                 //No tocar
 
@@ -973,13 +988,29 @@ public class BayArtController {
             }
         }
 
-        accesoABase.stopSponsor(idUser,Integer.parseInt(idArtist));
+        Integer profit = percentage * accesoABase.obtenerUsuarios(parametros).get(0).getBpoints() / 10000;
+
+        accesoABase.stopSponsor(idUser, Integer.parseInt(idArtist));
 
         accesoABase.modificarBpoints(Integer.parseInt(idUser), profit);
         accesoABase.modificarBpoints(Integer.parseInt(idArtist), -profit);
 
-        infoResponse.put("profit",profit);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
+
+    //Obtener Bpoints - JOYA
+    @RequestMapping(path = "/bpoints/{idUser}", method = RequestMethod.GET)
+    public ResponseEntity<Object> getBpoints(@PathVariable String idUser) {
+
+        Map<String, Object> infoResponse = new HashMap<>();
+
+        HashMap<String, String> parametros = new HashMap<>();
+        parametros.put("idUser", idUser);
+
+        infoResponse.put("bpoints", accesoABase.obtenerUsuarios(parametros).get(0).getBpoints());
+
+        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+    }
+
 }

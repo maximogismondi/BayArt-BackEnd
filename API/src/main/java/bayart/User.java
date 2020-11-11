@@ -11,8 +11,6 @@ public class User {
     private Date birthDate;
     private Date inscriptionDate;
     private Integer bpoints;
-    private Boolean theme;
-    private String language;
     private Boolean notificationsNewPublication;
     private Boolean notificationsBuyAlert;
     private Boolean notificationsInformSponsor;
@@ -22,7 +20,7 @@ public class User {
     private ArrayList<Integer> purchased;
     private ArrayList<Integer> dailyRewards;
 
-    public User(Integer idUser, String username, String email, String password, Date birthDate, Date inscriptionDate, Integer bpoints, Boolean theme, String language, Boolean notificationsNewPublication, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, ArrayList<Integer> subscriptions, ArrayList<ArrayList<Integer>> sponsors, ArrayList<Integer> bookmarks, ArrayList<Integer> purchased, ArrayList<Integer> dailyRewards) {
+    public User(Integer idUser, String username, String email, String password, Date birthDate, Date inscriptionDate, Integer bpoints, Boolean notificationsNewPublication, Boolean notificationsBuyAlert, Boolean notificationsInformSponsor, ArrayList<Integer> subscriptions, ArrayList<ArrayList<Integer>> sponsors, ArrayList<Integer> bookmarks, ArrayList<Integer> purchased, ArrayList<Integer> dailyRewards) {
         this.idUser = idUser;
         this.username = username;
         this.email = email;
@@ -30,8 +28,6 @@ public class User {
         this.birthDate = birthDate;
         this.inscriptionDate = inscriptionDate;
         this.bpoints = bpoints;
-        this.theme = theme;
-        this.language = language;
         this.notificationsNewPublication = notificationsNewPublication;
         this.notificationsBuyAlert = notificationsBuyAlert;
         this.notificationsInformSponsor = notificationsInformSponsor;
@@ -96,22 +92,6 @@ public class User {
 
     public void setBpoints(Integer bpoints) {
         this.bpoints = bpoints;
-    }
-
-    public Boolean getTheme() {
-        return theme;
-    }
-
-    public void setTheme(Boolean theme) {
-        this.theme = theme;
-    }
-
-    public String getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
     }
 
     public Boolean getNotificationsNewPublication() {
