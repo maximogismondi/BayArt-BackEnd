@@ -1,7 +1,5 @@
 package bayart;
 
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -302,26 +300,27 @@ public class BayArtController {
     }
 
     //Store - JOYA
-    @RequestMapping(path = "/store/{idUser}/{index}/{tags}/{maxPrice}", method = RequestMethod.GET)
+    @RequestMapping(path = "/store/{idUser}/{index}/{reset}/{tags}/{maxPrice}", method = RequestMethod.GET)
     public ResponseEntity<Object> getImgBookmarks_ImgStore(@PathVariable String idUser,
                                                            @PathVariable Integer index,
+                                                           @PathVariable Boolean reset,
                                                            @PathVariable String tags,
                                                            @PathVariable Integer maxPrice) {
 
         Map<String, Object> infoResponse = new HashMap<>();
         Map<String, String> parametros = new HashMap<>();
 
+        ArrayList<Image> bodyImagesIndex = new ArrayList<>();
+        HashMap<Integer, String> encodedBodyImages = new HashMap<>();
+
         ArrayList<Image> bookmarksImages = new ArrayList<>();
         HashMap<Integer, String> encodedBookmarksImages = new HashMap<>();
-
         HashMap<Integer, String> encodedProfileImages = new HashMap<>();
 
         parametros.put("idUser", idUser);
         User user = accesoABase.obtenerUsuarios(parametros).get(0);
 
         if (index == 1) {
-
-            listaImages.clear();
 
             ArrayList<Integer> idImagesBookmarks = user.getBookmarks();
 
@@ -339,41 +338,76 @@ public class BayArtController {
 
         }
 
-        parametros.clear();
-        if (maxPrice != -1) {
-            parametros.put("maxPrice", Integer.toString(maxPrice));
-        }
-        if (!tags.equals("null")) {
-            parametros.put("tags", tags);
-        }
-        parametros.put("salable", "true");
+        if (reset) {
 
-        ArrayList<Image> bodyImages = accesoABase.obtenerImagenes(parametros);
+            parametros.clear();
 
-        ArrayList<Image> bodyImagesIndex = new ArrayList<>();
-        HashMap<Integer, String> encodedBodyImages = new HashMap<>();
+            if (maxPrice < 10000) {
+                parametros.put("maxPrice", Integer.toString(maxPrice));
+            }
 
-        int indice = cantidad * (index - 1);
+            if (!tags.equals("null")) {
+                parametros.put("tags", tags);
+            }
+            parametros.put("salable", "true");
 
-        while (indice < cantidad * index) {
-            if (bodyImages.size() > indice) {
-                Image image = bodyImages.get((int) Math.round(Math.random() * (bodyImages.size() - 1)));
-                for (int i = 0; i <= listaImages.size(); i++) {
-                    if (i == listaImages.size()) {
-                        parametros.clear();
-                        parametros.put("idUser", Integer.toString(image.getIdUser()));
-                        if (Math.random() * 100 <= (Math.log((accesoABase.obtenerUsuarios(parametros).get(0).getBpoints() / 50) + 2) / Math.log(1.1))) {
-                            bodyImagesIndex.add(image);
-                            listaImages.add(image);
-                            encodedBodyImages.put(image.getIdImage(), accesoABase.obtenerImagenEnMongoDB(image.getName()));
-                            indice++;
-                        }
-                        break;
-                    }
-                    if (listaImages.get(i).getIdImage() == image.getIdImage()) {
-                        break;
+            listaImages.clear();
+
+            ArrayList<Image> databaseImages = accesoABase.obtenerImagenes(parametros);
+
+            for(Integer idPurchased : user.getPurchased()){
+                for (int i = 0; i < databaseImages.size(); i++) {
+                    if (databaseImages.get(i).getIdImage() == idPurchased){
+                        databaseImages.remove(i);
+                        i--;
                     }
                 }
+            }
+            parametros.clear();
+            parametros.put("idUser", idUser);
+
+            if(accesoABase. obtenerArtistas(parametros).size() > 0){
+                for(Integer idImage : accesoABase. obtenerArtistas(parametros).get(0).getImageList()){
+                    for (int i = 0; i < databaseImages.size(); i++) {
+                        if (databaseImages.get(i).getIdImage() == idImage){
+                            databaseImages.remove(i);
+                            i--;
+                        }
+                    }
+                }
+            }
+
+            while (databaseImages.size() > 0) {
+                int indexDatabaseImage = (int) Math.round(Math.random() * (databaseImages.size() - 1));
+
+                for (int i = 0; i <= listaImages.size(); i++) {
+
+                    if (i == listaImages.size()) {
+                        parametros.clear();
+                        parametros.put("idUser", Integer.toString(databaseImages.get(indexDatabaseImage).getIdUser()));
+
+                        if (Math.random() * 100 <= (Math.log((accesoABase.obtenerUsuarios(parametros).get(0).getBpoints() / 50) + 2) / Math.log(1.1))) {
+                            listaImages.add(databaseImages.get(indexDatabaseImage));
+                            databaseImages.remove(indexDatabaseImage);
+                        }
+
+                        break;
+                    }
+
+                    if (listaImages.get(i).getIdImage() == databaseImages.get(indexDatabaseImage).getIdImage()) {
+                        break;
+                    }
+
+                }
+            }
+
+            infoResponse.put("maxIndex", Math.ceil(Float.valueOf(listaImages.size()) / Float.valueOf(cantidad)));
+        }
+
+        for (int i = cantidad * (index - 1); i < cantidad * index; i++) {
+            if (listaImages.size() > i) {
+                bodyImagesIndex.add(listaImages.get(i));
+                encodedBodyImages.put(listaImages.get(i).getIdImage(), accesoABase.obtenerImagenEnMongoDB(listaImages.get(i).getName()));
             } else {
                 break;
             }
@@ -381,29 +415,14 @@ public class BayArtController {
 
         ArrayList<User> artists = asociarArtistas(bodyImagesIndex);
 
-        for (Image image : bookmarksImages) {
-            parametros.clear();
-            parametros.put("idUser", Integer.toString(image.getIdUser()));
-            User artist = accesoABase.obtenerUsuarios(parametros).get(0);
-
-            for (int i = 0; i <= artists.size(); i++) {
-                if (i == artists.size()) {
-                    artists.add(artist);
-                    break;
-                } else if (artist.getIdUser() == artists.get(i).getIdUser()) {
-                    break;
-                }
-            }
-        }
-
         for (User artistaAux : artists) {
             encodedProfileImages.put(artistaAux.getIdUser(), obtenerImagenPerfil(artistaAux.getIdUser()));
         }
 
-        infoResponse.put("bodyImagesIndex", bodyImagesIndex);
-        infoResponse.put("encodedBodyImages", encodedBodyImages);
+        infoResponse.put("images", bodyImagesIndex);
+        infoResponse.put("imagesEncoded", encodedBodyImages);
         infoResponse.put("artists", artists);
-        infoResponse.put("encodedProfileImages", encodedProfileImages);
+        infoResponse.put("profileImages", encodedProfileImages);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
@@ -566,6 +585,7 @@ public class BayArtController {
             infoResponse.put("maxIndex", Math.ceil(Float.valueOf(listaImages.size()) / Float.valueOf(cantidad)));
         }
 
+        parametros.clear();
         ArrayList<User> usuarios = accesoABase.obtenerUsuarios(parametros);
         int subscribers = 0;
         for (User usuarioAux : usuarios) {
@@ -614,98 +634,75 @@ public class BayArtController {
     }
 
     //Busqueda - JOYA
-    @RequestMapping(path = "/search/{idUser}/{word}/{index}/{tags}/{filterImage}/{filterArtists}", method = RequestMethod.GET)
-    public ResponseEntity<Object> getSearchResults(@PathVariable String idUser,
-                                                   @PathVariable String word,
+    @RequestMapping(path = "/search/{idUser}/{word}/{index}/{tags}/{reset}", method = RequestMethod.GET)
+    public ResponseEntity<Object> getSearchResults(@PathVariable String  idUser,
+                                                   @PathVariable String  word,
                                                    @PathVariable Integer index,
-                                                   @PathVariable String tags,
-                                                   @PathVariable Boolean filterImage,
-                                                   @PathVariable Boolean filterArtists) {
+                                                   @PathVariable String  tags,
+                                                   @PathVariable Boolean reset){
 
         Map<String, Object> infoResponse = new HashMap<>();
         Map<String, String> parametros = new HashMap<>();
 
+        word = word.toLowerCase();
 
-        if (filterImage) {
-
-            if (index == 1) {
-                parametros.clear();
-                parametros.put("word", word);
-                if (!tags.equals("null")) {
-                    parametros.put("tags", tags);
-                }
-
-                listaImages = accesoABase.obtenerImagenes(parametros);
-                reverse(listaImages);
-
+        if (reset) {
+            parametros.clear();
+            parametros.put("word", word);
+            if (!tags.equals("null")) {
+                parametros.put("tags", tags);
             }
 
-            ArrayList<Image> listaImagesIndex = new ArrayList<>();
-            HashMap<Integer, String> encodedImages = new HashMap<>();
+            listaImages = accesoABase.obtenerImagenes(parametros);
+            reverse(listaImages);
 
-            for (int i = cantidad * (index - 1); i < cantidad * index; i++) {
-                if (i < listaImages.size()) {
-                    listaImagesIndex.add(listaImages.get(i));
-                    encodedImages.put(listaImages.get(i).getIdImage(), accesoABase.obtenerImagenEnMongoDB(listaImages.get(i).getName()));
-                }
-            }
-
-            infoResponse.put("images", listaImagesIndex);
-            infoResponse.put("encodedImages", encodedImages);
-
-            ArrayList<User> artists = asociarArtistas(listaImagesIndex);
-            HashMap<Integer, String> encodedProfilePictures = new HashMap<>();
-
-
-            for (User artist : artists) {
-                encodedProfilePictures.put(artist.getIdUser(), obtenerImagenPerfil(artist.getIdUser()));
-            }
-
-            infoResponse.put("imageArtists", artists);
-            infoResponse.put("imageEncodedProfilePictures", encodedProfilePictures);
+            infoResponse.put("maxIndex", Math.ceil(Float.valueOf(listaImages.size()) / Float.valueOf(cantidad)));
         }
 
-        if (filterArtists) {
-            if (index == 1) {
+        ArrayList<Image> listaImagesIndex = new ArrayList<>();
+        HashMap<Integer, String> encodedImages = new HashMap<>();
 
-                listaArtists = accesoABase.obtenerUsuarios(new HashMap<>());
-
-                ArrayList<Artist> auxArtists = accesoABase.obtenerArtistas(new HashMap<>());
-
-                for (int i = 0; i < listaArtists.size(); i++) {
-                    if (!listaArtists.get(i).getUsername().contains(word)) {
-                        listaArtists.remove(i);
-                        i--;
-                    } else {
-                        for (int j = 0; j <= auxArtists.size(); j++) {
-                            if (j == auxArtists.size()) {
-                                listaArtists.remove(i);
-                                i--;
-                            } else if (listaArtists.get(i).getIdUser() == auxArtists.get(j).getIdUser()) {
-                                break;
-                            }
-                        }
-                    }
-                }
+        for (int i = cantidad * (index - 1); i < cantidad * index; i++) {
+            if (i < listaImages.size()) {
+                listaImagesIndex.add(listaImages.get(i));
+                encodedImages.put(listaImages.get(i).getIdImage(), accesoABase.obtenerImagenEnMongoDB(listaImages.get(i).getName()));
             }
-
-            ArrayList<User> listaArtistsIndex = new ArrayList<>();
-            HashMap<Integer, String> encodedProfilePictures = new HashMap<>();
-            HashMap<Integer, String> encodedBanners = new HashMap<>();
-
-            for (int i = cantidad * (index - 1); i < cantidad * index; i++) {
-                if (i < listaArtists.size()) {
-                    listaArtistsIndex.add(listaArtists.get(i));
-                    encodedProfilePictures.put(listaArtists.get(i).getIdUser(), obtenerImagenPerfil(listaArtists.get(i).getIdUser()));
-                    encodedBanners.put(listaArtists.get(i).getIdUser(), obtenerImagenBanner(listaArtists.get(i).getIdUser()));
-                }
-            }
-
-            infoResponse.put("artists", listaArtistsIndex);
-            infoResponse.put("encodedProfilePictures", encodedProfilePictures);
-            infoResponse.put("encodedBanners", encodedBanners);
-
         }
+
+        infoResponse.put("images", listaImagesIndex);
+        infoResponse.put("imagesEncoded", encodedImages);
+
+        ArrayList<User> artists = asociarArtistas(listaImagesIndex);
+        HashMap<Integer, String> encodedProfilePictures = new HashMap<>();
+
+        for (User artist : artists) {
+            encodedProfilePictures.put(artist.getIdUser(), obtenerImagenPerfil(artist.getIdUser()));
+        }
+
+        infoResponse.put("imageArtists", artists);
+
+        listaArtists = accesoABase.obtenerUsuarios(new HashMap<>());
+
+        for(int i = 0; i < listaArtists.size(); i++){
+            parametros.clear();
+            parametros.put("idUser",Integer.toString(listaArtists.get(i).getIdUser()));
+            if (accesoABase.obtenerArtistas(parametros).size() == 0){
+                listaArtists.remove(i);
+                i--;
+            }
+        }
+
+        ArrayList<User> auxArtists = new ArrayList<>();
+
+        for (int i = 0; i < listaArtists.size(); i++) {
+            if (listaArtists.get(i).getUsername().toLowerCase().contains(word)) {
+                auxArtists.add(listaArtists.get(i));
+                encodedProfilePictures.put(listaArtists.get(i).getIdUser(), obtenerImagenPerfil(listaArtists.get(i).getIdUser()));
+            }
+        }
+
+        infoResponse.put("artistsCarrousel", auxArtists);
+        infoResponse.put("encodedProfilePictures", encodedProfilePictures);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
@@ -763,18 +760,16 @@ public class BayArtController {
     @RequestMapping(path = "/settings/{idUser}/{field}", method = RequestMethod.POST)
     public ResponseEntity<Object> modifySettings(@PathVariable String idUser,
                                                  @PathVariable String field,
-                                                 @RequestBody String change) throws IOException {
+                                                 @RequestBody HashMap change) throws IOException {
 
         Map<String, Object> infoResponse = new HashMap<>();
 
         Map<String, String> parametros = new HashMap<>();
 
-        DBObject DBchange = (DBObject) JSON.parse(change);
-
         if (field.equals("username") || field.equals("email") || field.equals("password")) {
             if (!field.equals("password")) {
 
-                parametros.put(field, (String) DBchange.get(field));
+                parametros.put(field, (String) change.get(field));
 
                 if (accesoABase.obtenerUsuarios(parametros).size() != 0) {
                     return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
@@ -784,8 +779,9 @@ public class BayArtController {
                     accesoABase.modificarBpoints(Integer.parseInt(idUser), -200);
                 }
             }
-            accesoABase.cambiarUsername_Email_Password(idUser, field, (String) DBchange.get(field));
-        } else {
+            accesoABase.cambiarUsername_Email_Password(idUser, field, (String) change.get(field));
+        }
+        else if(field.equals("banner") || field.equals("imageProfile")){
 
             String nombre = "";
 
@@ -796,8 +792,11 @@ public class BayArtController {
             }
 
             accesoABase.borrarImagenMongo(nombre);
-            accesoABase.guardarImagenMongo((String) DBchange.get(field), nombre);
+            accesoABase.guardarImagenMongo((String) change.get(field), nombre);
             accesoABase.modificarBpoints(Integer.parseInt(idUser), -500);
+        }
+        else{
+            accesoABase.cambiarNotificaciones(idUser, field, Boolean.toString((Boolean) change.get("change")));
         }
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
@@ -1009,6 +1008,20 @@ public class BayArtController {
         parametros.put("idUser", idUser);
 
         infoResponse.put("bpoints", accesoABase.obtenerUsuarios(parametros).get(0).getBpoints());
+
+        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+    }
+
+    //Obtener Info Usuario - JOYA
+    @RequestMapping(path = "/infoUsuario/{idUser}", method = RequestMethod.GET)
+    public ResponseEntity<Object> getInfoUsuario(@PathVariable String idUser) {
+
+        Map<String, Object> infoResponse = new HashMap<>();
+
+        HashMap<String, String> parametros = new HashMap<>();
+        parametros.put("idUser", idUser);
+
+        infoResponse.put("infoUsuario", accesoABase.obtenerUsuarios(parametros).get(0));
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }

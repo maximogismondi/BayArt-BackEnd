@@ -249,13 +249,13 @@ public class AccesoMongoDB {
 
         for (Map.Entry<String, Object> atributo : requirements.entrySet()) {
             if (atributo.getKey().equals("idImage")) {
-                filtro = Filters.eq("idImage", atributo.getValue());
+                filtro = eq("idImage", atributo.getValue());
                 resultados = coleccion.find(filtro);
             } else if (atributo.getKey().equals("title")) {
-                filtro = Filters.eq("name", atributo.getValue());
+                filtro = eq("name", atributo.getValue());
                 resultados = coleccion.find(filtro);
             } else if (atributo.getKey().equals("idUser")) {
-                filtro = Filters.eq("idUser", atributo.getValue());
+                filtro = eq("idUser", atributo.getValue());
                 resultados = coleccion.find(filtro);
             }
         }
@@ -309,7 +309,7 @@ public class AccesoMongoDB {
 
                 case "word":
                     for (Image image : resultImages) {
-                        if (!image.getName().contains((String) parametro.getValue()) && !image.getDescription().contains((String) parametro.getValue())) {
+                        if (!image.getName().toLowerCase().contains((String) parametro.getValue()) && !image.getDescription().toLowerCase().contains((String) parametro.getValue())) {
                             imagesRemove.add(image);
                         }
                     }
@@ -424,6 +424,21 @@ public class AccesoMongoDB {
         Bson filter = Filters.eq("idUser", Integer.parseInt(idUser));
 
         String json = "{ $set: { " + field + ":'" + change + "'}}";
+
+        DBObject push = (DBObject) JSON.parse(json);
+
+        coleccion.updateOne(filter, (Bson) push);
+    }
+
+    public void cambiarNotificaciones(String idUser, String field, String change){
+        conectarAColeccion("users");
+        System.out.println(idUser+" "+field+" "+change);
+
+        Bson filter = Filters.eq("idUser", Integer.parseInt(idUser));
+        System.out.println(filter);
+
+        String json = "{ $set: { " + field + ":" + change + "} }";
+        System.out.println(json);
 
         DBObject push = (DBObject) JSON.parse(json);
 
