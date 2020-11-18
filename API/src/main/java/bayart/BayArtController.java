@@ -146,19 +146,13 @@ public class BayArtController {
     }
 
     //Register - JOYA
-    @RequestMapping(path = "/register/{username}/{email}/{password}/{day}/{month}/{year}/{type}", method = RequestMethod.POST)
-    public ResponseEntity<Object> confirmRegisterData(@PathVariable String username,
-                                                      @PathVariable String email,
-                                                      @PathVariable String password,
-                                                      @PathVariable String day,
-                                                      @PathVariable String month,
-                                                      @PathVariable String year,
-                                                      @PathVariable String type) throws IOException {
+    @RequestMapping(path = "/register", method = RequestMethod.PUT)
+    public ResponseEntity<Object> confirmRegisterData(@RequestBody HashMap info) throws IOException {
 
         Map<String, Object> infoResponse = new HashMap<>();
         HashMap<String, String> parametros = new HashMap<>();
 
-        parametros.put("username", username);
+        parametros.put("username", (String) info.get("username"));
 
         if (accesoABase.obtenerUsuarios(parametros).size() != 0) {
             infoResponse.put("error", "username");
@@ -166,20 +160,20 @@ public class BayArtController {
         }
 
         parametros.clear();
-        parametros.put("email", email);
+        parametros.put("email", (String) info.get("email"));
         if (accesoABase.obtenerUsuarios(parametros).size() != 0) {
             infoResponse.put("error", "email");
             return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
         }
 
-        parametros.put("username", username);
+        parametros.put("username", (String) info.get("username"));
 
-        Date fechaNacimiento = new Date(Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(day));
+        Date fechaNacimiento = new Date(Integer.parseInt((String) info.get("year")), Integer.parseInt((String) info.get("month")), Integer.parseInt((String) info.get("day")));
 
-        accesoABase.insertarUsuario(username, email, password, fechaNacimiento, type);
+        accesoABase.insertarUsuario((String) info.get("username"), (String) info.get("email"), (String) info.get("password"), fechaNacimiento, (String) info.get("userType"));
 
         parametros.clear();
-        parametros.put("email", email);
+        parametros.put("email", (String) info.get("email"));
 
         User user = accesoABase.obtenerUsuarios(parametros).get(0);
 
@@ -300,12 +294,11 @@ public class BayArtController {
     }
 
     //Store - JOYA
-    @RequestMapping(path = "/store/{idUser}/{index}/{reset}/{tags}/{maxPrice}", method = RequestMethod.GET)
+    @RequestMapping(path = "/store/{idUser}/{index}/{reset}", method = RequestMethod.POST)
     public ResponseEntity<Object> getImgBookmarks_ImgStore(@PathVariable String idUser,
                                                            @PathVariable Integer index,
                                                            @PathVariable Boolean reset,
-                                                           @PathVariable String tags,
-                                                           @PathVariable Integer maxPrice) {
+                                                           @RequestBody  HashMap requestBody) {
 
         Map<String, Object> infoResponse = new HashMap<>();
         Map<String, String> parametros = new HashMap<>();
@@ -342,12 +335,12 @@ public class BayArtController {
 
             parametros.clear();
 
-            if (maxPrice < 10000) {
-                parametros.put("maxPrice", Integer.toString(maxPrice));
+            if (Integer.parseInt((String)requestBody.get("maxPrice")) < 10000) {
+                parametros.put("maxPrice", (String) requestBody.get("maxPrice"));
             }
 
-            if (!tags.equals("null")) {
-                parametros.put("tags", tags);
+            if (!requestBody.get("tags").equals("null")) {
+                parametros.put("tags", (String) requestBody.get("tags"));
             }
             parametros.put("salable", "true");
 
@@ -428,11 +421,11 @@ public class BayArtController {
     }
 
     //Browse - JOYA
-    @RequestMapping(path = "/browse/{idUser}/{index}/{reset}/{tags}", method = RequestMethod.GET)
+    @RequestMapping(path = "/browse/{idUser}/{index}/{reset}", method = RequestMethod.POST)
     public ResponseEntity<Object> getImgBrowse(@PathVariable String idUser,
                                                @PathVariable Integer index,
-                                               @PathVariable String tags,
-                                               @PathVariable Boolean reset) {
+                                               @PathVariable Boolean reset,
+                                               @RequestBody  HashMap tags) {
 
         Map<String, Object> infoResponse = new HashMap<>();
         Map<String, String> parametros = new HashMap<>();
@@ -444,8 +437,8 @@ public class BayArtController {
         if (reset) {
 
             parametros.clear();
-            if (!tags.equals("null")) {
-                parametros.put("tags", tags);
+            if (!tags.get("tags").equals("null")) {
+                parametros.put("tags", (String) tags.get("tags"));
             }
             parametros.put("salable", "false");
 
@@ -634,12 +627,12 @@ public class BayArtController {
     }
 
     //Busqueda - JOYA
-    @RequestMapping(path = "/search/{idUser}/{word}/{index}/{tags}/{reset}", method = RequestMethod.GET)
+    @RequestMapping(path = "/search/{idUser}/{word}/{index}/{reset}", method = RequestMethod.POST)
     public ResponseEntity<Object> getSearchResults(@PathVariable String  idUser,
                                                    @PathVariable String  word,
                                                    @PathVariable Integer index,
-                                                   @PathVariable String  tags,
-                                                   @PathVariable Boolean reset){
+                                                   @PathVariable Boolean reset,
+                                                   @RequestBody  HashMap tags){
 
         Map<String, Object> infoResponse = new HashMap<>();
         Map<String, String> parametros = new HashMap<>();
@@ -649,8 +642,9 @@ public class BayArtController {
         if (reset) {
             parametros.clear();
             parametros.put("word", word);
-            if (!tags.equals("null")) {
-                parametros.put("tags", tags);
+
+            if (!tags.get("tags").equals("null")) {
+                parametros.put("tags", (String) tags.get("tags"));
             }
 
             listaImages = accesoABase.obtenerImagenes(parametros);
@@ -762,8 +756,6 @@ public class BayArtController {
                                                  @PathVariable String field,
                                                  @RequestBody HashMap change) throws IOException {
 
-        Map<String, Object> infoResponse = new HashMap<>();
-
         Map<String, String> parametros = new HashMap<>();
 
         if (field.equals("username") || field.equals("email") || field.equals("password")) {
@@ -772,7 +764,7 @@ public class BayArtController {
                 parametros.put(field, (String) change.get(field));
 
                 if (accesoABase.obtenerUsuarios(parametros).size() != 0) {
-                    return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
+                    return new ResponseEntity<>(HttpStatus.CONFLICT);
                 }
 
                 if (field.equals("username")) {
@@ -793,13 +785,13 @@ public class BayArtController {
 
             accesoABase.borrarImagenMongo(nombre);
             accesoABase.guardarImagenMongo((String) change.get(field), nombre);
-            accesoABase.modificarBpoints(Integer.parseInt(idUser), -500);
+            accesoABase.modificarBpoints(Integer.parseInt(idUser), -200);
         }
         else{
             accesoABase.cambiarNotificaciones(idUser, field, Boolean.toString((Boolean) change.get("change")));
         }
 
-        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     //Settings GET - JOYA
@@ -847,41 +839,33 @@ public class BayArtController {
     }
 
     //Upload Image - JOYA
-    @RequestMapping(path = "/uploadImage/{idUser}/{title}/{tags}/{price}", method = RequestMethod.POST)
+    @RequestMapping(path = "/uploadImage/{idUser}", method = RequestMethod.POST)
     public ResponseEntity<Object> uploadImage(@PathVariable Integer idUser,
-                                              @PathVariable String title,
-                                              @PathVariable String tags,
-                                              @PathVariable Integer price,
-                                              @RequestBody HashMap requestBody) throws IOException {
-
-        Map<String, Object> infoResponse = new HashMap<>();
+                                              @RequestBody  HashMap requestBody) throws IOException {
 
         HashMap<String, String> parametros = new HashMap<>();
-        parametros.put("title", title);
+        parametros.put("title", (String) requestBody.get("title"));
 
         if (accesoABase.obtenerImagenes(parametros).size() != 0) {
-            infoResponse.put("error", "title");
-            return new ResponseEntity<>(infoResponse, HttpStatus.CONFLICT);
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
         accesoABase.modificarBpoints(idUser, -500);
 
-        accesoABase.guardarImagen((String) requestBody.get("encodedImage"), title, idUser, price, (String) requestBody.get("description"), desconcatenarFiltros(tags));
-        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+        accesoABase.guardarImagen((String) requestBody.get("encodedImage"), (String) requestBody.get("title"), idUser, Integer.parseInt((String) requestBody.get("price")), (String) requestBody.get("description"), desconcatenarFiltros((String) requestBody.get("tags")));
+        return new ResponseEntity<>(HttpStatus.OK);
 
     }
 
     //Buy/Bookmarks - JOYA
-    @RequestMapping(path = "/action/{idUser}/{idImage}/{action}", method = RequestMethod.POST)
+    @RequestMapping(path = "/action/{idUser}/{idImage}", method = RequestMethod.POST)
     public ResponseEntity<Object> addBookmark_BuyImage(@PathVariable String idUser,
                                                        @PathVariable String idImage,
-                                                       @PathVariable String action) {
+                                                       @RequestBody  HashMap action) {
 
-        Map<String, Object> infoResponse = new HashMap<>();
+        accesoABase.addImageToUser(idUser, idImage, (String) action.get("action"));
 
-        accesoABase.addImageToUser(idUser, idImage, action);
-
-        if (action.equals("buy")) {
+        if (action.get("action").equals("buy")) {
             HashMap<String, String> parametros = new HashMap<>();
             parametros.put("idImage", idImage);
 
@@ -904,7 +888,7 @@ public class BayArtController {
             }
         }
 
-        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     //Add sub - JOYA
@@ -912,13 +896,11 @@ public class BayArtController {
     public ResponseEntity<Object> addSubscription(@PathVariable Integer idUser,
                                                   @PathVariable Integer idArtist) {
 
-        Map<String, Object> infoResponse = new HashMap<>();
-
         accesoABase.addSub(idUser, idArtist);
         accesoABase.modificarBpoints(idUser, -200);
         accesoABase.modificarBpoints(idArtist, 200);
 
-        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     //Stop sub - JOYA
@@ -926,34 +908,30 @@ public class BayArtController {
     public ResponseEntity<Object> stopSubscription(@PathVariable String idUser,
                                                    @PathVariable String idArtist) {
 
-        Map<String, Object> infoResponse = new HashMap<>();
-
         accesoABase.stopSub(idUser, Integer.parseInt(idArtist));
 
-        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     //Add sponsor - JOYA
-    @RequestMapping(path = "/sponsor/{idUser}/{idArtist}/{bpoints}", method = RequestMethod.POST)
+    @RequestMapping(path = "/sponsor/{idUser}/{idArtist}", method = RequestMethod.POST)
     public ResponseEntity<Object> addSponsor(@PathVariable String idUser,
                                              @PathVariable String idArtist,
-                                             @PathVariable Integer bpoints) {
-
-        Map<String, Object> infoResponse = new HashMap<>();
+                                             @RequestBody  HashMap bpoints) {
 
         HashMap<String, String> parametros = new HashMap<>();
         parametros.put("idUser", idArtist);
 
         User artist = accesoABase.obtenerUsuarios(parametros).get(0);
 
-        Integer percentage = (bpoints * 10000) / (artist.getBpoints() + bpoints);
+        Integer percentage = (Integer.parseInt((String)bpoints.get("bpoints")) * 10000) / (artist.getBpoints() + Integer.parseInt((String)bpoints.get("bpoints")));
 
-        accesoABase.modificarBpoints(Integer.parseInt(idUser), -bpoints);
-        accesoABase.modificarBpoints(Integer.parseInt(idArtist), bpoints);
+        accesoABase.modificarBpoints(Integer.parseInt(idUser), -Integer.parseInt((String)bpoints.get("bpoints")));
+        accesoABase.modificarBpoints(Integer.parseInt(idArtist), Integer.parseInt((String)bpoints.get("bpoints")));
 
         accesoABase.addSponsor(idUser, idArtist, percentage);
 
-        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     //Stop sponsor - JOYA
@@ -1023,7 +1001,19 @@ public class BayArtController {
 
         infoResponse.put("infoUsuario", accesoABase.obtenerUsuarios(parametros).get(0));
 
+        User usuario = accesoABase.obtenerUsuarios(parametros).get(0);
+        infoResponse.put("user", usuario);
+        infoResponse.put("encodedProfilePicture", obtenerImagenPerfil(usuario.getIdUser()));
+
+        parametros.clear();
+        parametros.put("idUser", Integer.toString(Integer.parseInt(idUser)));
+        if (accesoABase.obtenerArtistas(parametros).size() != 0) {
+            infoResponse.put("artist", accesoABase.obtenerArtistas(parametros).get(0));
+            infoResponse.put("encodedBanner", obtenerImagenBanner(usuario.getIdUser()));
+        }
+
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+
     }
 
 }

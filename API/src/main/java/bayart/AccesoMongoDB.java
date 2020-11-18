@@ -359,7 +359,7 @@ public class AccesoMongoDB {
         nuevoDocumento.append("email", email);
         nuevoDocumento.append("inscriptionDate", new Date());
         nuevoDocumento.append("birthDate", birthDate);
-        nuevoDocumento.append("bpoints", 500);
+        nuevoDocumento.append("bpoints", 10000);
         nuevoDocumento.append("notificationsNewPublication", true);
         nuevoDocumento.append("notificationsBuyAlert", true);
         nuevoDocumento.append("notificationsInformSponsor", true);
@@ -430,18 +430,19 @@ public class AccesoMongoDB {
         coleccion.updateOne(filter, (Bson) push);
     }
 
+    //JOYA
     public void cambiarNotificaciones(String idUser, String field, String change){
-        conectarAColeccion("users");
-        System.out.println(idUser+" "+field+" "+change);
-
         Bson filter = Filters.eq("idUser", Integer.parseInt(idUser));
-        System.out.println(filter);
 
         String json = "{ $set: { " + field + ":" + change + "} }";
-        System.out.println(json);
 
         DBObject push = (DBObject) JSON.parse(json);
 
+        if (field.equals("notificationsNewPublication") || field.equals("notificationsBuyAlert") || field.equals("notificationsInformSponsor")){
+            conectarAColeccion("users");
+        } else {
+            conectarAColeccion("artists");
+        }
         coleccion.updateOne(filter, (Bson) push);
     }
 
