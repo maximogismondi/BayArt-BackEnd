@@ -33,7 +33,7 @@ public class BayArtController {
 
     //constante cantidad de imagenes que se devuelven
 
-    static final int cantidad = 10;
+        static final int cantidad = 15    ;
 
     //Funciones extra
 
@@ -721,6 +721,8 @@ public class BayArtController {
                 listaImages.add(accesoABase.obtenerImagenes(parametros).get(0));
             }
 
+            reverse(listaImages);
+
             infoResponse.put("maxIndex", Math.ceil(Float.valueOf(listaImages.size()) / Float.valueOf(cantidad)));
         }
 
@@ -733,7 +735,6 @@ public class BayArtController {
                 encondedImages.put(listaImages.get(i).getIdImage(), accesoABase.obtenerImagenEnMongoDB(listaImages.get(i).getName()));
             }
         }
-        reverse(imagesIndex);
 
         ArrayList<User> artists = asociarArtistas(imagesIndex);
         HashMap<Integer, String> encodedProfilePictures = new HashMap<>();
@@ -806,34 +807,52 @@ public class BayArtController {
 
         User user = accesoABase.obtenerUsuarios(parametros).get(0);
 
-        ArrayList<User> artists = new ArrayList<>();
-        ArrayList<Image> images = new ArrayList<>();
-        ArrayList<User> sponsorsArtists = new ArrayList<>();
+        ArrayList<String> artists = new ArrayList<>();
+        ArrayList<String> sponsorsArtists = new ArrayList<>();
         ArrayList<Float> sponsorsPercentage = new ArrayList<>();
+        ArrayList<String> subscriptors = new ArrayList<>();
+        ArrayList<String> sponsors = new ArrayList<>();
 
         for (Integer idSub : user.getSubscriptions()) {
             parametros.clear();
             parametros.put("idUser", Integer.toString(idSub));
-            artists.add(accesoABase.obtenerUsuarios(parametros).get(0));
-        }
-
-        for (Integer idImage : user.getPurchased()) {
-            parametros.clear();
-            parametros.put("idImage", Integer.toString(idImage));
-            images.add(accesoABase.obtenerImagenes(parametros).get(0));
+            artists.add(accesoABase.obtenerUsuarios(parametros).get(0).getUsername());
         }
 
         for (ArrayList<Integer> sponsor : user.getSponsors()) {
             parametros.clear();
             parametros.put("idUser", Integer.toString(sponsor.get(0)));
-            sponsorsArtists.add(accesoABase.obtenerUsuarios(parametros).get(0));
+            sponsorsArtists.add(accesoABase.obtenerUsuarios(parametros).get(0).getUsername());
             sponsorsPercentage.add(Float.valueOf(sponsor.get(1)) / 100);
         }
 
+        parametros.clear();
+
+        for (User userAux : accesoABase.obtenerUsuarios(parametros)){
+            for (ArrayList<Integer> sponsor : userAux.getSponsors()){
+                for (Integer idArtistSponsored : sponsor){
+                    if(idArtistSponsored == Integer.parseInt(idUser)){
+                        sponsors.add(userAux.getUsername());
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (User userAux : accesoABase.obtenerUsuarios(parametros)){
+            for (Integer subscription : userAux.getSubscriptions()) {
+                if (subscription == Integer.parseInt(idUser)) {
+                    subscriptors.add(userAux.getUsername());
+                    break;
+                }
+            }
+        }
+
         infoResponse.put("subscriptions", artists);
-        infoResponse.put("purchasedImages", images);
-        infoResponse.put("sponsorsArtists", sponsorsArtists);
+        infoResponse.put("sponsoredArtists", sponsorsArtists);
         infoResponse.put("sponsorsPercentage", sponsorsPercentage);
+        infoResponse.put("subscriptors", subscriptors);
+        infoResponse.put("sponsors", sponsors);
 
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
@@ -1006,7 +1025,7 @@ public class BayArtController {
         infoResponse.put("encodedProfilePicture", obtenerImagenPerfil(usuario.getIdUser()));
 
         parametros.clear();
-        parametros.put("idUser", Integer.toString(Integer.parseInt(idUser)));
+        parametros.put("idUser", idUser);
         if (accesoABase.obtenerArtistas(parametros).size() != 0) {
             infoResponse.put("artist", accesoABase.obtenerArtistas(parametros).get(0));
             infoResponse.put("encodedBanner", obtenerImagenBanner(usuario.getIdUser()));
