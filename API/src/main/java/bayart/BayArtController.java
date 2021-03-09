@@ -33,7 +33,7 @@ public class BayArtController {
 
     //constante cantidad de imagenes que se devuelven
 
-        static final int cantidad = 15    ;
+        static final int cantidad = 100;
 
     //Funciones extra
 
@@ -751,6 +751,46 @@ public class BayArtController {
         return new ResponseEntity<>(infoResponse, HttpStatus.OK);
     }
 
+    //Download - JOYA
+    @RequestMapping(path = "/download/{idUser}", method = RequestMethod.GET)
+    public ResponseEntity<Object> download(@PathVariable String idUser) {
+
+        Map<String, Object> infoResponse = new HashMap<>();
+
+        Map<String, String> parametros = new HashMap<>();
+        parametros.put("idUser", idUser);
+        User usuario = accesoABase.obtenerUsuarios(parametros).get(0);
+
+        listaImages.clear();
+
+        for (Integer id : usuario.getPurchased()) {
+            parametros.clear();
+            parametros.put("idImage", Integer.toString(id));
+            listaImages.add(accesoABase.obtenerImagenes(parametros).get(0));
+        }
+
+        reverse(listaImages);
+
+        HashMap<Integer, String> encondedImages = new HashMap<>();
+
+        for (int i = 0; i < listaImages.size(); i++) {
+            encondedImages.put(listaImages.get(i).getIdImage(), accesoABase.obtenerImagenEnMongoDB(listaImages.get(i).getName()));
+        }
+
+        ArrayList<User> artists = asociarArtistas(listaImages);
+        HashMap<Integer, String> encodedProfilePictures = new HashMap<>();
+
+        for (User artist : artists) {
+            encodedProfilePictures.put(artist.getIdUser(), obtenerImagenPerfil(artist.getIdUser()));
+        }
+
+        infoResponse.put("images", listaImages);
+        infoResponse.put("encodedImages", encondedImages);
+        infoResponse.put("artists", artists);
+
+        return new ResponseEntity<>(infoResponse, HttpStatus.OK);
+    }
+
     //Settings POST - JOYA
     @RequestMapping(path = "/settings/{idUser}/{field}", method = RequestMethod.POST)
     public ResponseEntity<Object> modifySettings(@PathVariable String idUser,
@@ -943,7 +983,7 @@ public class BayArtController {
 
         User artist = accesoABase.obtenerUsuarios(parametros).get(0);
 
-        Integer percentage = (Integer.parseInt((String)bpoints.get("bpoints")) * 10000) / (artist.getBpoints() + Integer.parseInt((String)bpoints.get("bpoints")));
+        Integer percentage = Integer.parseInt(Long.toString(Long.parseLong((String) bpoints.get("bpoints")) * 10000 / (Long.parseLong(Integer.toString(artist.getBpoints())) + Long.parseLong((String)bpoints.get("bpoints")))));
 
         accesoABase.modificarBpoints(Integer.parseInt(idUser), -Integer.parseInt((String)bpoints.get("bpoints")));
         accesoABase.modificarBpoints(Integer.parseInt(idArtist), Integer.parseInt((String)bpoints.get("bpoints")));
